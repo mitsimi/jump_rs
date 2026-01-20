@@ -34,9 +34,6 @@ COPY --from=frontend-builder /static/dist /app/static/dist
 
 COPY --from=rust-builder /app/target/release/jump_rs /app/
 
-COPY devices.json ./
-COPY --chown=app:app static/ ./static/
-
 USER app
 
 EXPOSE 3000
