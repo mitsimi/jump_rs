@@ -40,11 +40,5 @@ fn get_mac_from_arp(ip: &str) -> Result<Option<String>, AppError> {
         return Ok(Some(mac));
     }
 
-    let fallback_pattern = Regex::new(r"([0-9A-Fa-f]{1,2}[:-]){5}([0-9A-Fa-f]{1,2})").unwrap();
-    if let Some(caps) = fallback_pattern.find(&output_str) {
-        let mac = caps.as_str().to_uppercase();
-        return Ok(Some(mac));
-    }
-
     Ok(None)
 }
