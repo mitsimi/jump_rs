@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import styles from './DeviceCard.module.css';
-import { useWakeDevice } from '../hooks/useWakeDevice';
-import { useDeleteDevice } from '../hooks/useDeleteDevice';
-import type { Device } from '../types/device';
+import { useState } from "react";
+import styles from "./DeviceCard.module.css";
+import { useWakeDevice } from "../hooks/useWakeDevice";
+import { useDeleteDevice } from "../hooks/useDeleteDevice";
+import type { Device } from "../types/device";
 
 interface DeviceCardProps {
   device: Device;
@@ -29,7 +29,7 @@ export function DeviceCard({ device, onEdit }: DeviceCardProps) {
   };
 
   return (
-    <div className={`${styles.card} ${isWaking ? styles.waking : ''}`}>
+    <div className={`${styles.card} ${isWaking ? styles.waking : ""}`}>
       <div className={styles.header}>
         <div className={styles.name}>{device.name}</div>
         <div className={styles.id}>{device.id.slice(0, 8)}</div>

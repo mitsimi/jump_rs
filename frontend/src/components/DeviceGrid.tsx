@@ -1,11 +1,11 @@
-import { useDevices } from '../hooks/useDevices';
-import { useWakeDevice } from '../hooks/useWakeDevice';
-import { useDeleteDevice } from '../hooks/useDeleteDevice';
-import { usePacketCount } from '../hooks/usePacketCount';
-import { useToast } from '../hooks/useToast';
-import { DeviceCard } from './DeviceCard';
-import styles from './DeviceGrid.module.css';
-import type { Device } from '../types/device';
+import { useDevices } from "../hooks/useDevices";
+import { useWakeDevice } from "../hooks/useWakeDevice";
+import { useDeleteDevice } from "../hooks/useDeleteDevice";
+import { usePacketCount } from "../hooks/usePacketCount";
+import { useToast } from "../hooks/useToast";
+import { DeviceCard } from "./DeviceCard";
+import styles from "./DeviceGrid.module.css";
+import type { Device } from "../types/device";
 
 interface DeviceGridProps {
   onAddDevice: () => void;
@@ -24,12 +24,12 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
       const result = await wakeDevice.mutateAsync(device.id);
       if (result.success) {
         increment();
-        showToast(`Wake packet sent to ${device.name}`, 'success');
+        showToast(`Wake packet sent to ${device.name}`, "success");
       } else {
-        showToast(result.message || 'Failed to send wake packet', 'error');
+        showToast(result.message || "Failed to send wake packet", "error");
       }
     } catch {
-      showToast('Failed to send wake packet', 'error');
+      showToast("Failed to send wake packet", "error");
     }
   };
 
@@ -37,9 +37,9 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
     if (confirm(`Remove ${device.name}?`)) {
       try {
         await deleteDevice.mutateAsync(device.id);
-        showToast(`${device.name} removed`, 'success');
+        showToast(`${device.name} removed`, "success");
       } catch {
-        showToast('Failed to delete device', 'error');
+        showToast("Failed to delete device", "error");
       }
     }
   };
@@ -64,7 +64,9 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
           <div className="empty-state">
             <div className="empty-state-icon">Error</div>
             <div className="empty-state-title">Failed to Load Devices</div>
-            <div className="empty-state-text">Please try refreshing the page</div>
+            <div className="empty-state-text">
+              Please try refreshing the page
+            </div>
           </div>
         </div>
       </div>
@@ -87,7 +89,8 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
             <div className={styles.emptyIcon}>⟲</div>
             <div className={styles.emptyTitle}>No Devices Found</div>
             <div className={styles.emptyText}>
-              Add your first device to start controlling your network wake capabilities.
+              Add your first device to start controlling your network wake
+              capabilities.
             </div>
             <button className={styles.emptyAddBtn} onClick={onAddDevice}>
               <span className={styles.emptyAddBtnIcon}>+</span>
@@ -97,7 +100,7 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
         </div>
       ) : (
         <div className={styles.grid}>
-          {devices.map(device => (
+          {devices.map((device) => (
             <DeviceCard
               key={device.id}
               device={device}

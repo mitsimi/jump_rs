@@ -1,6 +1,6 @@
-import styles from './StatsBar.module.css';
-import { useDevices } from '../hooks/useDevices';
-import { usePacketCount } from '../hooks/usePacketCount';
+import styles from "./StatsBar.module.css";
+import { useDevices } from "../hooks/useDevices";
+import { usePacketCount } from "../hooks/usePacketCount";
 
 export function StatsBar() {
   const { data: devices } = useDevices();

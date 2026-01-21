@@ -1,5 +1,11 @@
-import { createContext, useContext, useState, type ReactNode, type Context } from 'react';
-import type { ToastType } from '../types/device';
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+  type Context,
+} from "react";
+import type { ToastType } from "../types/device";
 
 interface ToastMessage {
   id: string;
@@ -11,15 +17,18 @@ interface ToastContextType {
   showToast: (message: string, type: ToastType) => void;
 }
 
-export const ToastContext: Context<ToastContextType> = createContext<ToastContextType>({
-  showToast: () => {},
-});
+export const ToastContext: Context<ToastContextType> =
+  createContext<ToastContextType>({
+    showToast: () => {},
+  });
 
 export function useToast() {
   return useContext(ToastContext);
 }
 
-export function createToastProvider(ToastComponent: React.ComponentType<{ toasts: ToastMessage[] }>) {
+export function createToastProvider(
+  ToastComponent: React.ComponentType<{ toasts: ToastMessage[] }>,
+) {
   return function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -27,8 +36,10 @@ export function createToastProvider(ToastComponent: React.ComponentType<{ toasts
       const id = crypto.randomUUID();
       setToasts((prev: ToastMessage[]) => [...prev, { id, message, type }]);
       setTimeout(() => {
-        setToasts((prev: ToastMessage[]) => prev.filter((t: ToastMessage) => t.id !== id));
-      }, 3000);
+        setToasts((prev: ToastMessage[]) =>
+          prev.filter((t: ToastMessage) => t.id !== id),
+        );
+      }, 5000);
     };
 
     return (

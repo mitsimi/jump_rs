@@ -74,11 +74,12 @@ export function DeviceModal({
       alert("Enter an IP address first");
       return;
     }
+
     const result = await lookupMac.mutateAsync(ip);
     if (result.found && result.mac) {
       setValue("mac_address", result.mac);
     } else {
-      toast.showToast("No MAC address found for the given IP address", "error");
+      toast.showToast(result.error!, "error");
     }
   };
 

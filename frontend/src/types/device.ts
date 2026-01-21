@@ -27,10 +27,10 @@ export interface MacLookupRequest {
 export interface MacLookupResponse {
   found: boolean;
   mac?: string;
-  message?: string;
+  error?: string;
 }
 
-export type ToastType = 'success' | 'error';
+export type ToastType = "success" | "error";
 
 export interface ToastMessage {
   id: string;
@@ -38,7 +38,7 @@ export interface ToastMessage {
   type: ToastType;
 }
 
-export type ModalMode = 'add' | 'edit';
+export type ModalMode = "add" | "edit";
 
 export interface DeviceCardProps {
   device: Device;
