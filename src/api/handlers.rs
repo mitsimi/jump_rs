@@ -124,18 +124,25 @@ pub struct ArpLookupRequest {
 
 #[derive(Debug, serde::Serialize)]
 pub struct ArpLookupResponse {
-    mac: Option<String>,
-    found: bool,
+    pub mac: Option<String>,
+    pub found: bool,
+    pub error: Option<String>,
 }
 
 pub async fn arp_lookup(
     State(_storage): State<SharedStorage>,
     Json(req): Json<ArpLookupRequest>,
-) -> Result<Json<ArpLookupResponse>, AppError> {
-    let mac = arp::lookup_mac(&req.ip)?;
-
-    Ok(Json(ArpLookupResponse {
-        mac: mac.clone(),
-        found: mac.is_some(),
-    }))
+) -> Json<ArpLookupResponse> {
+    match arp::lookup_mac(&req.ip) {
+        Ok(mac) => Json(ArpLookupResponse {
+            mac: mac.clone(),
+            found: mac.is_some(),
+            error: None,
+        }),
+        Err(e) => Json(ArpLookupResponse {
+            mac: None,
+            found: false,
+            error: Some(e.to_string()),
+        }),
+    }
 }

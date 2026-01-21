@@ -6,20 +6,22 @@ use std::process::Command;
 pub fn lookup_mac(ip: &str) -> Result<Option<String>, AppError> {
     let ip_addr: Ipv4Addr = ip.parse().map_err(AppError::InvalidIp)?;
 
-    ping_ip(ip_addr).ok();
+    ping_ip(&ip_addr)?;
 
     get_mac_from_arp(ip)
 }
 
-fn ping_ip(ip: Ipv4Addr) -> Result<(), AppError> {
+fn ping_ip(ip: &Ipv4Addr) -> Result<(), AppError> {
     let output = Command::new("ping")
         .args(["-c", "1", "-W", "1", ip.to_string().as_str()])
-        .output();
+        .output()
+        .map_err(AppError::Network)?;
 
-    match output {
-        Ok(_) => Ok(()),
-        Err(_) => Ok(()),
+    if !output.status.success() {
+        return Err(AppError::DeviceUnreachable(ip.to_string()));
     }
+
+    Ok(())
 }
 
 fn get_mac_from_arp(ip: &str) -> Result<Option<String>, AppError> {
