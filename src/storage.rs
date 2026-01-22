@@ -70,6 +70,10 @@ impl DeviceStorage {
     pub fn get_all(&self) -> Vec<Device> {
         self.devices.clone()
     }
+
+    pub fn close(&self) -> Result<(), AppError> {
+        self.save()
+    }
 }
 
 pub type SharedStorage = Arc<Mutex<DeviceStorage>>;
