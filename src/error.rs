@@ -21,9 +21,6 @@ pub enum AppError {
     #[error("Failed to query ARP table: {0}")]
     ArpQuery(#[source] std::io::Error),
 
-    #[error("Device not reachable at {0}")]
-    DeviceUnreachable(String),
-
     #[error("Device {0} not found")]
     DeviceNotFound(String),
 }
@@ -38,7 +35,6 @@ impl AppError {
             AppError::StorageParse(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Network(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::ArpQuery(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::DeviceUnreachable(_) => StatusCode::NOT_FOUND,
         }
     }
 
@@ -51,7 +47,6 @@ impl AppError {
             AppError::StorageParse(_) => "error",
             AppError::Network(_) => "error",
             AppError::ArpQuery(_) => "error",
-            AppError::DeviceUnreachable(_) => "warn",
         }
     }
 }

@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { Header } from "./components/Header";
-import { StatsBar } from "./components/StatsBar";
 import { DeviceGrid } from "./components/DeviceGrid";
 import { DeviceModal } from "./components/DeviceModal";
+import { ImportExportModal } from "./components/ImportExportModal";
 import { ToastProvider } from "./components/Toast";
 import type { Device } from "./types/device";
 
 function AppContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
 
   const openAddModal = () => {
     setEditingDevice(null);
@@ -27,14 +28,17 @@ function AppContent() {
 
   return (
     <div className="container">
-      <Header />
-      <StatsBar />
+      <Header onImportExport={() => setIsImportExportOpen(true)} />
       <DeviceGrid onAddDevice={openAddModal} onEditDevice={openEditModal} />
       <DeviceModal
         isOpen={isModalOpen}
         mode={editingDevice ? "edit" : "add"}
         device={editingDevice || undefined}
         onClose={closeModal}
+      />
+      <ImportExportModal
+        isOpen={isImportExportOpen}
+        onClose={() => setIsImportExportOpen(false)}
       />
     </div>
   );

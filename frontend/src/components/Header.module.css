@@ -2,9 +2,119 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 80px;
+  margin-bottom: 40px;
   padding-bottom: 40px;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    gap: 24px;
+  }
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.5rem;
+  }
+}
+
+.accent {
+  color: var(--accent-primary);
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.dataBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dataBtn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+}
+
+.statusDot {
+  width: 10px;
+  height: 10px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.statusText {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @media (max-width: 768px) {

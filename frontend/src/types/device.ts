@@ -15,19 +15,12 @@ export interface DeviceFormData {
   description: string | null;
 }
 
-export interface WakeResponse {
-  success: boolean;
-  message?: string;
-}
-
 export interface MacLookupRequest {
   ip: string;
 }
 
 export interface MacLookupResponse {
-  found: boolean;
-  mac?: string;
-  error?: string;
+  mac: string;
 }
 
 export type ToastType = "success" | "error";
@@ -57,4 +50,17 @@ export interface DeviceModalProps {
 export interface ApiError {
   status: number;
   message: string;
+}
+
+export interface ExportDevice {
+  name: string;
+  mac_address: string;
+  ip_address: string | null;
+  port: number;
+  description: string | null;
+}
+
+export interface ImportExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
 }

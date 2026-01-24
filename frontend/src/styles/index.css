@@ -99,3 +99,56 @@
   color: var(--text-muted);
   letter-spacing: 0;
 }
+
+.mac-input-wrapper {
+  position: relative;
+}
+
+.lookup-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-active);
+  border-radius: 3px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lookup-btn:hover:not(:disabled) {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.lookup-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 100px;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.error-message {
+  color: var(--error);
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+}

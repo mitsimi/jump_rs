@@ -3,10 +3,10 @@ use regex::Regex;
 use std::net::Ipv4Addr;
 use std::process::Command;
 
-pub fn lookup_mac(ip: &str) -> Result<Option<String>, AppError> {
+pub fn lookup_mac(ip: &str) -> Result<String, AppError> {
     let ip_addr: Ipv4Addr = ip.parse().map_err(AppError::InvalidIp)?;
 
-    ping_ip(&ip_addr)?;
+    ping_ip(&ip_addr).ok();
 
     get_mac_from_arp(ip)
 }
@@ -14,17 +14,15 @@ pub fn lookup_mac(ip: &str) -> Result<Option<String>, AppError> {
 fn ping_ip(ip: &Ipv4Addr) -> Result<(), AppError> {
     let output = Command::new("ping")
         .args(["-c", "1", "-W", "1", ip.to_string().as_str()])
-        .output()
-        .map_err(AppError::Network)?;
+        .output();
 
-    if !output.status.success() {
-        return Err(AppError::DeviceUnreachable(ip.to_string()));
+    match output {
+        Ok(_) => Ok(()),
+        Err(_) => Ok(()),
     }
-
-    Ok(())
 }
 
-fn get_mac_from_arp(ip: &str) -> Result<Option<String>, AppError> {
+fn get_mac_from_arp(ip: &str) -> Result<String, AppError> {
     let output = Command::new("arp")
         .args(["-a"])
         .output()
@@ -39,8 +37,8 @@ fn get_mac_from_arp(ip: &str) -> Result<Option<String>, AppError> {
         && let Some(mac_match) = caps.get(1)
     {
         let mac = mac_match.as_str().to_uppercase();
-        return Ok(Some(mac));
+        return Ok(mac);
     }
 
-    Ok(None)
+    Err(AppError::DeviceNotFound(ip.to_string()))
 }

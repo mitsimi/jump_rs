@@ -5,21 +5,37 @@ mod models;
 mod storage;
 mod wol;
 
-use crate::storage::{SharedStorage, load_storage};
+use crate::storage::SharedStorage;
 use axum::{
     Router,
-    routing::{delete, get, post, put},
+    routing::{get, post, put},
 };
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
+use tracing::{error, info};
+use tracing_subscriber::EnvFilter;
+
+const STORAGE_FILE: &str = "devices.json";
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_level(true)
+        .with_target(false)
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,tower_http=debug".into()),
+        )
+        .init();
 
-    let storage: SharedStorage = load_storage();
+    let storage = match SharedStorage::load(STORAGE_FILE) {
+        Ok(storage) => storage,
+        Err(err) => {
+            error!("Failed to load storage: {}", err);
+            std::process::exit(1);
+        }
+    };
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -28,24 +44,29 @@ async fn main() {
 
     let app = Router::new()
         .fallback_service(ServeDir::new("static/dist"))
-        .route("/api/devices", get(api::get_devices))
-        .route("/api/devices", post(api::create_device))
-        .route("/api/devices/{id}", put(api::update_device))
-        .route("/api/devices/{id}", delete(api::delete_device))
+        .route(
+            "/api/devices",
+            get(api::get_devices).post(api::create_device),
+        )
+        .route("/api/devices/export", get(api::export_devices))
+        .route("/api/devices/import", post(api::import_devices))
+        .route(
+            "/api/devices/{id}",
+            put(api::update_device).delete(api::delete_device),
+        )
         .route("/api/devices/{id}/wake", post(api::wake_device))
         .route("/api/arp-lookup", post(api::arp_lookup))
         .with_state(storage.clone())
         .layer(cors);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
-    tracing::info!("Server running on http://{}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    info!("Server running on http://{}", addr);
+
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("failed to start server");
-
-    let _ = storage.lock().unwrap().close();
 }
 
 async fn shutdown_signal() {

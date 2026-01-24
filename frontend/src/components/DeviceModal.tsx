@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import styles from "./DeviceModal.module.css";
+import { Modal, ModalContent, ModalFooter } from "./Modal";
 import { useCreateDevice } from "../hooks/useCreateDevice";
 import { useUpdateDevice } from "../hooks/useUpdateDevice";
 import { useMacLookup } from "../hooks/useMacLookup";
@@ -62,138 +62,132 @@ export function DeviceModal({
       } else {
         await createDevice.mutateAsync(data);
       }
+      reset();
       onClose();
     } catch {
       // Error handled by mutation
     }
   };
 
-  const handleLookupMac = async () => {
+  const handleLookupMac = () => {
     const ip = getValues("ip_address");
     if (!ip) {
       alert("Enter an IP address first");
       return;
     }
 
-    const result = await lookupMac.mutateAsync(ip);
-    if (result.found && result.mac) {
-      setValue("mac_address", result.mac);
-    } else {
-      toast.showToast(result.error!, "error");
-    }
+    lookupMac.mutate(ip, {
+      onSuccess: (result) => {
+        // Success - mac is always present in successful response
+        setValue("mac_address", result.mac);
+      },
+      onError: (error) => {
+        // Backend throws ApiError with message
+        const errorMessage = error instanceof Error ? error.message : "Failed to lookup MAC address";
+        toast.showToast(errorMessage, "error");
+      },
+    });
   };
 
   return (
-    <div className={`${styles.overlay} ${isOpen ? styles.overlayActive : ""}`}>
-      <div className={styles.modal}>
-        <div className={styles.header}>
-          <h3 className={styles.title}>
-            {mode === "edit" ? "Edit Device" : "Add Device"}
-          </h3>
-          <button className={styles.closeBtn} onClick={onClose}>
-            &times;
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={mode === "edit" ? "Edit Device" : "Add Device"}
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <ModalContent>
+          <div className="form-group">
+            <label className="form-label">Device Name</label>
+            <input
+              className="form-input"
+              placeholder="e.g., Gaming PC"
+              {...register("name", { required: "Name is required" })}
+            />
+            {errors.name && (
+              <span className="error-message">{errors.name.message}</span>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              MAC Address
+              <span className="form-hint">AA:BB:CC:DD:EE:FF</span>
+            </label>
+            <div className="mac-input-wrapper">
+              <input
+                className="form-input"
+                placeholder="AA:BB:CC:DD:EE:FF"
+                {...register("mac_address", {
+                  required: "MAC address is required",
+                  pattern: {
+                    value: /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
+                    message: "Invalid MAC address format",
+                  },
+                })}
+              />
+              <button
+                type="button"
+                className="lookup-btn"
+                onClick={handleLookupMac}
+                disabled={lookupMac.isPending}
+              >
+                {lookupMac.isPending ? "..." : "Lookup"}
+              </button>
+            </div>
+            {errors.mac_address && (
+              <span className="error-message">
+                {errors.mac_address.message}
+              </span>
+            )}
+          </div>
+
+          <div className="form-row">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">
+                IP Address <span className="form-hint">(optional)</span>
+              </label>
+              <input
+                className="form-input"
+                placeholder="192.168.1.100"
+                {...register("ip_address")}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Port</label>
+              <input
+                className="form-input"
+                type="number"
+                placeholder="9"
+                {...register("port")}
+              />
+            </div>
+          </div>
+
+          <div className="form-group" style={{ margin: "20px 0px" }}>
+            <label className="form-label">
+              Description <span className="form-hint">(optional)</span>
+            </label>
+            <input
+              className="form-input"
+              placeholder="Notes about this device..."
+              {...register("description")}
+            />
+          </div>
+        </ModalContent>
+        <ModalFooter>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Cancel
           </button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className={styles.body}>
-            <div className="form-group">
-              <label className="form-label">Device Name</label>
-              <input
-                className="form-input"
-                placeholder="e.g., Gaming PC"
-                {...register("name", { required: "Name is required" })}
-              />
-              {errors.name && (
-                <span className={styles.error}>{errors.name.message}</span>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                MAC Address
-                <span className="form-hint">AA:BB:CC:DD:EE:FF</span>
-              </label>
-              <div className={styles.macInputWrapper}>
-                <input
-                  className="form-input"
-                  placeholder="AA:BB:CC:DD:EE:FF"
-                  {...register("mac_address", {
-                    required: "MAC address is required",
-                    pattern: {
-                      value: /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-                      message: "Invalid MAC address format",
-                    },
-                  })}
-                />
-                <button
-                  type="button"
-                  className={styles.lookupBtn}
-                  onClick={handleLookupMac}
-                  disabled={lookupMac.isPending}
-                >
-                  {lookupMac.isPending ? "..." : "Lookup"}
-                </button>
-              </div>
-              {errors.mac_address && (
-                <span className={styles.error}>
-                  {errors.mac_address.message}
-                </span>
-              )}
-            </div>
-
-            <div className={styles.formRow}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">
-                  IP Address <span className="form-hint">(optional)</span>
-                </label>
-                <input
-                  className="form-input"
-                  placeholder="192.168.1.100"
-                  {...register("ip_address")}
-                />
-              </div>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Port</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  placeholder="9"
-                  {...register("port")}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginTop: "20px" }}>
-              <label className="form-label">
-                Description <span className="form-hint">(optional)</span>
-              </label>
-              <input
-                className="form-input"
-                placeholder="Notes about this device..."
-                {...register("description")}
-              />
-            </div>
-          </div>
-
-          <div className={styles.footer}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={createDevice.isPending || updateDevice.isPending}
-            >
-              {mode === "edit" ? "Save Changes" : "Add Device"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={createDevice.isPending || updateDevice.isPending}
+          >
+            {mode === "edit" ? "Save Changes" : "Add Device"}
+          </button>
+        </ModalFooter>
+      </form>
+    </Modal>
   );
 }

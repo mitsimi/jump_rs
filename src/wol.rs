@@ -9,12 +9,7 @@ pub fn send_wol_packet(device: &Device) -> Result<(), AppError> {
 
     let socket = UdpSocket::bind("0.0.0.0:0").map_err(AppError::Network)?;
 
-    let target_addr = if let Some(ip) = &device.ip_address {
-        let ip_addr: Ipv4Addr = ip.parse().map_err(AppError::InvalidIp)?;
-        SocketAddr::new(ip_addr.into(), device.port)
-    } else {
-        SocketAddr::new(Ipv4Addr::BROADCAST.into(), device.port)
-    };
+    let target_addr = SocketAddr::new(Ipv4Addr::BROADCAST.into(), device.port);
 
     socket.set_broadcast(true).map_err(AppError::Network)?;
 

@@ -1,41 +1,54 @@
+use parking_lot::RwLock;
+
 use crate::error::AppError;
 use crate::models::Device;
 use std::fs;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
-const STORAGE_FILE: &str = "devices.json";
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
 pub struct DeviceStorage {
+    path: String,
     pub devices: Vec<Device>,
 }
 
 impl DeviceStorage {
-    pub fn new() -> Self {
+    pub fn new(path: &str) -> Self {
         Self {
+            path: path.to_string(),
             devices: Vec::new(),
         }
     }
 
-    pub fn load() -> Result<Self, AppError> {
-        if !Path::new(STORAGE_FILE).exists() {
-            return Ok(Self::new());
+    pub fn load(path: &str) -> Result<Self, AppError> {
+        if !Path::new(path).exists() {
+            return Ok(Self::new(path));
         }
 
-        let content = fs::read_to_string(STORAGE_FILE).map_err(AppError::StorageIo)?;
+        let content = fs::read_to_string(path).map_err(AppError::StorageIo)?;
+        let devices: Vec<Device> =
+            serde_json::from_str(&content).map_err(AppError::StorageParse)?;
 
-        serde_json::from_str(&content).map_err(AppError::StorageParse)
+        Ok(Self {
+            path: path.to_string(),
+            devices,
+        })
     }
 
     pub fn save(&self) -> Result<(), AppError> {
-        let content = serde_json::to_string_pretty(self).map_err(AppError::StorageParse)?;
+        let content =
+            serde_json::to_string_pretty(&self.devices).map_err(AppError::StorageParse)?;
 
-        fs::write(STORAGE_FILE, content).map_err(AppError::StorageIo)
+        fs::write(&self.path, content).map_err(AppError::StorageIo)
     }
 
     pub fn add(&mut self, device: Device) -> Result<(), AppError> {
         self.devices.push(device);
+        self.save()
+    }
+
+    pub fn add_all(&mut self, devices: Vec<Device>) -> Result<(), AppError> {
+        self.devices.extend(devices);
         self.save()
     }
 
@@ -70,16 +83,37 @@ impl DeviceStorage {
     pub fn get_all(&self) -> Vec<Device> {
         self.devices.clone()
     }
-
-    pub fn close(&self) -> Result<(), AppError> {
-        self.save()
-    }
 }
 
-pub type SharedStorage = Arc<Mutex<DeviceStorage>>;
+#[derive(Debug, Clone)]
+pub struct SharedStorage(Arc<RwLock<DeviceStorage>>);
 
-pub fn load_storage() -> SharedStorage {
-    Arc::new(Mutex::new(
-        DeviceStorage::load().unwrap_or_else(|_| DeviceStorage::new()),
-    ))
+impl SharedStorage {
+    pub fn load(path: &str) -> Result<Self, AppError> {
+        Ok(Self(Arc::new(RwLock::new(DeviceStorage::load(path)?))))
+    }
+
+    pub fn add(&self, device: Device) -> Result<(), AppError> {
+        self.0.write().add(device)
+    }
+
+    pub fn add_all(&self, devices: Vec<Device>) -> Result<(), AppError> {
+        self.0.write().add_all(devices)
+    }
+
+    pub fn remove(&self, id: &str) -> Result<Option<Device>, AppError> {
+        self.0.write().remove(id)
+    }
+
+    pub fn update(&self, id: &str, device: Device) -> Result<Option<Device>, AppError> {
+        self.0.write().update(id, device)
+    }
+
+    pub fn get(&self, id: &str) -> Option<Device> {
+        self.0.read().get(id)
+    }
+
+    pub fn get_all(&self) -> Vec<Device> {
+        self.0.read().get_all()
+    }
 }

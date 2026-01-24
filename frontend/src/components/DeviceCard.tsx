@@ -16,15 +16,18 @@ export function DeviceCard({ device, onEdit }: DeviceCardProps) {
   const wakeDevice = useWakeDevice();
   const deleteDevice = useDeleteDevice();
 
-  const handleWake = async () => {
+  const handleWake = () => {
     setIsWaking(true);
-    await wakeDevice.mutateAsync(device.id);
-    setTimeout(() => setIsWaking(false), 500);
+    wakeDevice.mutate(device.id, {
+      onSettled: () => {
+        setTimeout(() => setIsWaking(false), 500);
+      },
+    });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (confirm(`Remove ${device.name}?`)) {
-      await deleteDevice.mutateAsync(device.id);
+      deleteDevice.mutate(device.id);
     }
   };
 

@@ -1,7 +1,6 @@
 import { useDevices } from "../hooks/useDevices";
 import { useWakeDevice } from "../hooks/useWakeDevice";
 import { useDeleteDevice } from "../hooks/useDeleteDevice";
-import { usePacketCount } from "../hooks/usePacketCount";
 import { useToast } from "../hooks/useToast";
 import { DeviceCard } from "./DeviceCard";
 import styles from "./DeviceGrid.module.css";
@@ -16,21 +15,17 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
   const { data: devices, isLoading, error } = useDevices();
   const wakeDevice = useWakeDevice();
   const deleteDevice = useDeleteDevice();
-  const { increment } = usePacketCount();
   const { showToast } = useToast();
 
-  const handleWake = async (device: Device) => {
-    try {
-      const result = await wakeDevice.mutateAsync(device.id);
-      if (result.success) {
-        increment();
+  const handleWake = (device: Device) => {
+    wakeDevice.mutate(device.id, {
+      onSuccess: () => {
         showToast(`Wake packet sent to ${device.name}`, "success");
-      } else {
-        showToast(result.message || "Failed to send wake packet", "error");
-      }
-    } catch {
-      showToast("Failed to send wake packet", "error");
-    }
+      },
+      onError: () => {
+        showToast("Failed to send wake packet", "error");
+      },
+    });
   };
 
   const handleDelete = async (device: Device) => {
@@ -78,7 +73,22 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
       <div className={styles.header}>
         <h2 className={styles.title}>Controlled Devices</h2>
         <button className={styles.addBtn} onClick={onAddDevice}>
-          <span className={styles.addBtnIcon}>+</span>
+          <span className={styles.addBtnIcon}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14"></path>
+              <path d="M12 5v14"></path>
+            </svg>
+          </span>
           <span>Add Device</span>
         </button>
       </div>
@@ -86,16 +96,27 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
       {!devices || devices.length === 0 ? (
         <div className={styles.emptyGrid}>
           <div className={styles.emptyBanner}>
-            <div className={styles.emptyIcon}>⟲</div>
+            <div className={styles.emptyIcon}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </div>
             <div className={styles.emptyTitle}>No Devices Found</div>
             <div className={styles.emptyText}>
               Add your first device to start controlling your network wake
               capabilities.
             </div>
-            <button className={styles.emptyAddBtn} onClick={onAddDevice}>
-              <span className={styles.emptyAddBtnIcon}>+</span>
-              <span>Add Device</span>
-            </button>
           </div>
         </div>
       ) : (
