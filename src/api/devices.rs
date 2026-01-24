@@ -126,7 +126,7 @@ pub async fn update_device(
         mac_address,
         ip_address: req.ip_address.or(existing.ip_address),
         port: req.port.unwrap_or(existing.port),
-        description: req.description.or(existing.description),
+        description: req.description,
         created_at: existing.created_at,
     };
 
