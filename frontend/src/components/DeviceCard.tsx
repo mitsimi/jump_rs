@@ -1,4 +1,3 @@
-import { useState } from "react";
 import styles from "./DeviceCard.module.css";
 import { useWakeDevice } from "../hooks/useWakeDevice";
 import { useDeleteDevice } from "../hooks/useDeleteDevice";
@@ -12,17 +11,11 @@ interface DeviceCardProps {
 }
 
 export function DeviceCard({ device, onEdit }: DeviceCardProps) {
-  const [isWaking, setIsWaking] = useState(false);
   const wakeDevice = useWakeDevice();
   const deleteDevice = useDeleteDevice();
 
   const handleWake = () => {
-    setIsWaking(true);
-    wakeDevice.mutate(device.id, {
-      onSettled: () => {
-        setTimeout(() => setIsWaking(false), 500);
-      },
-    });
+    wakeDevice.mutate(device.id);
   };
 
   const handleDelete = () => {
@@ -32,7 +25,7 @@ export function DeviceCard({ device, onEdit }: DeviceCardProps) {
   };
 
   return (
-    <div className={`${styles.card} ${isWaking ? styles.waking : ""}`}>
+    <div className={`${styles.card}`}>
       <div className={styles.header}>
         <div className={styles.name}>{device.name}</div>
         <div className={styles.id}>{device.id.slice(0, 8)}</div>

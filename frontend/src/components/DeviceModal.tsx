@@ -56,16 +56,23 @@ export function DeviceModal({
   }, [device, reset]);
 
   const onSubmit = async (data: DeviceFormData) => {
-    try {
-      if (device) {
-        await updateDevice.mutateAsync({ id: device.id, data });
-      } else {
-        await createDevice.mutateAsync(data);
-      }
-      reset();
-      onClose();
-    } catch {
-      // Error handled by mutation
+    if (device) {
+      await updateDevice.mutateAsync(
+        { id: device.id, data },
+        {
+          onSuccess: () => {
+            reset();
+            onClose();
+          },
+        },
+      );
+    } else {
+      await createDevice.mutateAsync(data, {
+        onSuccess: () => {
+          reset();
+          onClose();
+        },
+      });
     }
   };
 
@@ -83,7 +90,10 @@ export function DeviceModal({
       },
       onError: (error) => {
         // Backend throws ApiError with message
-        const errorMessage = error instanceof Error ? error.message : "Failed to lookup MAC address";
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to lookup MAC address";
         toast.showToast(errorMessage, "error");
       },
     });
