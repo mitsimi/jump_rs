@@ -1,3 +1,4 @@
+use crate::config;
 use crate::error::AppError;
 use crate::models::{Device, validate_mac_address};
 use crate::storage::SharedStorage;
@@ -57,7 +58,7 @@ pub async fn import_devices(
             device.name,
             device.mac_address,
             device.ip_address,
-            device.port,
+            device.port.unwrap_or(config::get().wol.default_port),
             device.description,
         )?;
         devices.push(device);
@@ -83,13 +84,11 @@ pub async fn create_device(
         req.name,
         req.mac_address,
         req.ip_address,
-        req.port,
+        req.port.unwrap_or(config::get().wol.default_port),
         req.description,
     )?;
 
-    {
-        storage.add(device.clone())?;
-    }
+    storage.add(device.clone())?;
 
     Ok((StatusCode::CREATED, Json(device)))
 }

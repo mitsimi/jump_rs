@@ -1,5 +1,6 @@
 mod api;
 mod arp;
+mod config;
 mod error;
 mod models;
 mod storage;
@@ -17,19 +18,28 @@ use tower_http::services::ServeDir;
 use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 
-const STORAGE_FILE: &str = "devices.json";
-
 #[tokio::main]
 async fn main() {
+    let config = match config::init() {
+        Ok(config) => config,
+        Err(err) => {
+            eprintln!("Failed to load configuration: {}", err);
+            std::process::exit(1);
+        }
+    };
+
     tracing_subscriber::fmt()
         .with_level(true)
         .with_target(false)
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,tower_http=debug".into()),
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| config.server.log_level.clone().into()),
         )
         .init();
 
-    let storage = match SharedStorage::load(STORAGE_FILE) {
+    info!("Configuration loaded successfully");
+
+    let storage = match SharedStorage::load(&config.storage.file_path) {
         Ok(storage) => storage,
         Err(err) => {
             error!("Failed to load storage: {}", err);
@@ -59,7 +69,7 @@ async fn main() {
         .with_state(storage.clone())
         .layer(cors);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     info!("Server running on http://{}", addr);
 

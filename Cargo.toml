@@ -18,3 +18,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 regex = "1"
 thiserror = "1"
 parking_lot = "0.12.5"
+config = "0.15"

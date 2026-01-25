@@ -18,7 +18,7 @@ impl Device {
         name: String,
         mac_address: String,
         ip_address: Option<String>,
-        port: Option<u16>,
+        port: u16,
         description: Option<String>,
     ) -> Result<Self, AppError> {
         validate_mac_address(&mac_address)?;
@@ -28,7 +28,7 @@ impl Device {
             name,
             mac_address,
             ip_address,
-            port: port.unwrap_or(9),
+            port,
             description,
             created_at: chrono::Utc::now(),
         })
