@@ -19,7 +19,40 @@ pub struct AppConfig {
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
     pub port: u16,
-    pub log_level: String,
+    pub log_level: LogLevel,
+    pub log_format: LogFormat,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    #[default]
+    Info,
+    Warn,
+    Error,
+}
+
+impl LogLevel {
+    pub fn as_filter(&self) -> &'static str {
+        match self {
+            LogLevel::Trace => "trace,tower_http=trace",
+            LogLevel::Debug => "debug,tower_http=debug",
+            LogLevel::Info => "info,tower_http=debug",
+            LogLevel::Warn => "warn,tower_http=warn",
+            LogLevel::Error => "error,tower_http=error",
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum LogFormat {
+    #[default]
+    Compact,
+    Json,
+    Pretty,
 }
 
 #[derive(Debug, Deserialize)]
@@ -36,7 +69,8 @@ impl Default for ServerConfig {
     fn default() -> Self {
         Self {
             port: 3000,
-            log_level: "info,tower_http=debug".to_string(),
+            log_level: LogLevel::default(),
+            log_format: LogFormat::default(),
         }
     }
 }
@@ -73,7 +107,8 @@ fn load() -> Result<AppConfig, ConfigError> {
 
     let config = Config::builder()
         .set_default("server.port", 3000)?
-        .set_default("server.log_level", "info,tower_http=debug")?
+        .set_default("server.log_level", "info")?
+        .set_default("server.log_format", "compact")?
         .set_default("storage.file_path", "devices.json")?
         .set_default("wol.default_port", 9)?
         .add_source(File::with_name(&config_path).required(false))

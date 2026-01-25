@@ -6,6 +6,7 @@ mod models;
 mod storage;
 mod wol;
 
+use crate::config::LogFormat;
 use crate::storage::SharedStorage;
 use axum::{
     Router,
@@ -23,23 +24,30 @@ use tracing::{Span, error, info};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 fn init_tracing() {
+    let server_config = &config::get().server;
+
     let env_filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| "info,jump_rs=debug,tower_http=debug".into());
+        .unwrap_or_else(|_| server_config.log_level.as_filter().into());
 
-    let use_json = std::env::var("LOG_FORMAT")
-        .map(|v| v == "json")
-        .unwrap_or(false);
-
-    if use_json {
-        tracing_subscriber::registry()
-            .with(env_filter)
-            .with(fmt::layer().json())
-            .init();
-    } else {
-        tracing_subscriber::registry()
-            .with(env_filter)
-            .with(fmt::layer().compact())
-            .init();
+    match server_config.log_format {
+        LogFormat::Json => {
+            tracing_subscriber::registry()
+                .with(env_filter)
+                .with(fmt::layer().json())
+                .init();
+        }
+        LogFormat::Pretty => {
+            tracing_subscriber::registry()
+                .with(env_filter)
+                .with(fmt::layer().pretty())
+                .init();
+        }
+        LogFormat::Compact => {
+            tracing_subscriber::registry()
+                .with(env_filter)
+                .with(fmt::layer().compact())
+                .init();
+        }
     }
 }
 

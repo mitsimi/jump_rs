@@ -13,6 +13,7 @@ services:
       # Server configuration
       - JUMPERS_SERVER_PORT=3000
       # - JUMPERS_SERVER_LOG_LEVEL=info,tower_http=debug
+      # - JUMPERS_SERVER_LOG_FORMAT=compact  # compact, json, or pretty
       # Storage configuration
       # - JUMPERS_STORAGE_FILE_PATH=/app/devices.json
       # Wake-on-LAN configuration
