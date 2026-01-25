@@ -1,5 +1,6 @@
 use axum::{http::StatusCode, response::IntoResponse};
 use thiserror::Error;
+use tracing::{error, warn};
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -38,15 +39,66 @@ impl AppError {
         }
     }
 
-    fn log_level(&self) -> &str {
+    fn log(&self, status: StatusCode) {
+        let status_code = status.as_u16();
+
         match self {
-            AppError::DeviceNotFound(_) => "warn",
-            AppError::InvalidMac(_) => "warn",
-            AppError::InvalidIp(_) => "warn",
-            AppError::StorageIo(_) => "error",
-            AppError::StorageParse(_) => "error",
-            AppError::Network(_) => "error",
-            AppError::ArpQuery(_) => "error",
+            AppError::DeviceNotFound(id) => {
+                warn!(
+                    error_type = "device_not_found",
+                    status_code = status_code,
+                    device_id = %id,
+                    "Request failed"
+                );
+            }
+            AppError::InvalidMac(mac) => {
+                warn!(
+                    error_type = "invalid_mac",
+                    status_code = status_code,
+                    mac = %mac,
+                    "Request failed"
+                );
+            }
+            AppError::InvalidIp(e) => {
+                warn!(
+                    error_type = "invalid_ip",
+                    status_code = status_code,
+                    details = %e,
+                    "Request failed"
+                );
+            }
+            AppError::StorageIo(e) => {
+                error!(
+                    error_type = "storage_io",
+                    status_code = status_code,
+                    details = %e,
+                    "Request failed"
+                );
+            }
+            AppError::StorageParse(e) => {
+                error!(
+                    error_type = "storage_parse",
+                    status_code = status_code,
+                    details = %e,
+                    "Request failed"
+                );
+            }
+            AppError::Network(e) => {
+                error!(
+                    error_type = "network",
+                    status_code = status_code,
+                    details = %e,
+                    "Request failed"
+                );
+            }
+            AppError::ArpQuery(e) => {
+                error!(
+                    error_type = "arp_query",
+                    status_code = status_code,
+                    details = %e,
+                    "Request failed"
+                );
+            }
         }
     }
 }
@@ -54,13 +106,7 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         let status_code = self.status_code();
-        let log_level = self.log_level();
-
-        match log_level {
-            "warn" => tracing::warn!("{} - {}", status_code, self),
-            "error" => tracing::error!("{} - {}", status_code, self),
-            _ => {}
-        }
+        self.log(status_code);
 
         let body = serde_json::json!({
             "status": "error",

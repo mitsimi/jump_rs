@@ -9,14 +9,39 @@ mod wol;
 use crate::storage::SharedStorage;
 use axum::{
     Router,
+    http::Request,
     routing::{get, post, put},
 };
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
-use tracing::{error, info};
-use tracing_subscriber::EnvFilter;
+use tower_http::trace::{DefaultOnResponse, TraceLayer};
+use tower_http::{LatencyUnit, request_id::RequestId};
+use tracing::{Span, error, info};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+
+fn init_tracing() {
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| "info,jump_rs=debug,tower_http=debug".into());
+
+    let use_json = std::env::var("LOG_FORMAT")
+        .map(|v| v == "json")
+        .unwrap_or(false);
+
+    if use_json {
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(fmt::layer().json())
+            .init();
+    } else {
+        tracing_subscriber::registry()
+            .with(env_filter)
+            .with(fmt::layer().compact())
+            .init();
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -28,22 +53,20 @@ async fn main() {
         }
     };
 
-    tracing_subscriber::fmt()
-        .with_level(true)
-        .with_target(false)
-        .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| config.server.log_level.clone().into()),
-        )
-        .init();
+    init_tracing();
+    info!(version = env!("CARGO_PKG_VERSION"), "Starting jump.rs");
 
-    info!("Configuration loaded successfully");
-
-    let storage = match SharedStorage::load(&config.storage.file_path) {
-        Ok(storage) => storage,
-        Err(err) => {
-            error!("Failed to load storage: {}", err);
-            std::process::exit(1);
+    let storage: SharedStorage = {
+        let file_path = &config.storage.file_path;
+        match SharedStorage::load(file_path) {
+            Ok(storage) => {
+                info!(file = file_path, "Storage initialized");
+                storage
+            }
+            Err(err) => {
+                error!(error = %err, file = file_path, "Failed to load storage");
+                std::process::exit(1);
+            }
         }
     };
 
@@ -67,11 +90,41 @@ async fn main() {
         .route("/api/devices/{id}/wake", post(api::wake_device))
         .route("/api/arp-lookup", post(api::arp_lookup))
         .with_state(storage.clone())
-        .layer(cors);
+        .layer(cors)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<axum::body::Body>| {
+                    // let request_id = request
+                    //     .headers()
+                    //     .get("x-request-id")
+                    //     .and_then(|v| v.to_str().ok())
+                    //     .unwrap_or("unknown");
+
+                    let request_id = request
+                        .extensions()
+                        .get::<RequestId>()
+                        .and_then(|id| id.header_value().to_str().ok())
+                        .unwrap_or("unknown");
+
+                    tracing::info_span!(
+                        "request",
+                        method = %request.method(),
+                        uri = %request.uri(),
+                        version = ?request.version(),
+                        request_id = %request_id,
+                    )
+                })
+                .on_request(|_request: &Request<axum::body::Body>, _span: &Span| {
+                    tracing::debug!("started processing request");
+                })
+                .on_response(DefaultOnResponse::new().latency_unit(LatencyUnit::Micros)),
+        )
+        .layer(PropagateRequestIdLayer::x_request_id())
+        .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    info!("Server running on http://{}", addr);
+    info!(addr = %addr, "Server listening");
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
@@ -101,4 +154,6 @@ async fn shutdown_signal() {
         _ = ctrl_c => {},
         _ = terminate => {},
     }
+
+    info!("Shutdown signal received");
 }

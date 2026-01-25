@@ -4,11 +4,14 @@ use crate::models::{Device, validate_mac_address};
 use crate::storage::SharedStorage;
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
+use tracing::{info, instrument};
 
+#[instrument(skip_all)]
 pub async fn get_devices(
     State(storage): State<SharedStorage>,
 ) -> Result<Json<Vec<Device>>, AppError> {
     let devices = storage.get_all();
+    info!(count = devices.len(), "Devices retrieved");
     Ok(Json(devices))
 }
 
@@ -21,22 +24,24 @@ pub struct ExportResponse {
     pub description: Option<String>,
 }
 
+#[instrument(skip_all)]
 pub async fn export_devices(
     State(storage): State<SharedStorage>,
 ) -> Result<Json<Vec<ExportResponse>>, AppError> {
     let devices = storage.get_all();
-    Ok(Json(
-        devices
-            .into_iter()
-            .map(|device| ExportResponse {
-                name: device.name,
-                mac_address: device.mac_address,
-                port: device.port,
-                ip_address: device.ip_address,
-                description: device.description,
-            })
-            .collect(),
-    ))
+    let count = devices.len();
+    let result: Vec<ExportResponse> = devices
+        .into_iter()
+        .map(|device| ExportResponse {
+            name: device.name,
+            mac_address: device.mac_address,
+            port: device.port,
+            ip_address: device.ip_address,
+            description: device.description,
+        })
+        .collect();
+    info!(count = count, "Devices exported");
+    Ok(Json(result))
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -48,6 +53,7 @@ pub struct ImportRequest {
     pub description: Option<String>,
 }
 
+#[instrument(skip_all, fields(count = req.len()))]
 pub async fn import_devices(
     State(storage): State<SharedStorage>,
     Json(req): Json<Vec<ImportRequest>>,
@@ -64,6 +70,7 @@ pub async fn import_devices(
         devices.push(device);
     }
     storage.add_all(devices.clone())?;
+    info!(count = devices.len(), "Devices imported");
     Ok((StatusCode::CREATED, Json(devices)))
 }
 
@@ -76,6 +83,7 @@ pub struct CreateDeviceRequest {
     pub description: Option<String>,
 }
 
+#[instrument(skip_all, fields(device_name = %req.name))]
 pub async fn create_device(
     State(storage): State<SharedStorage>,
     Json(req): Json<CreateDeviceRequest>,
@@ -90,6 +98,7 @@ pub async fn create_device(
 
     storage.add(device.clone())?;
 
+    info!(device_id = %device.id, "Device created");
     Ok((StatusCode::CREATED, Json(device)))
 }
 
@@ -102,6 +111,7 @@ pub struct UpdateDeviceRequest {
     pub description: Option<String>,
 }
 
+#[instrument(skip_all, fields(device_id = %id))]
 pub async fn update_device(
     State(storage): State<SharedStorage>,
     Path(id): Path<String>,
@@ -130,13 +140,16 @@ pub async fn update_device(
     };
 
     storage.update(&id, updated.clone())?;
+    info!("Device updated");
     Ok(Json(updated))
 }
 
+#[instrument(skip_all, fields(device_id = %id))]
 pub async fn delete_device(
     State(storage): State<SharedStorage>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
     storage.remove(&id)?;
+    info!("Device deleted");
     Ok(StatusCode::NO_CONTENT)
 }

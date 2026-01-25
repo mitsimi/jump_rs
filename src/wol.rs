@@ -1,7 +1,9 @@
 use crate::error::AppError;
 use crate::models::Device;
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+use tracing::{debug, instrument};
 
+#[instrument(skip_all)]
 pub fn send_wol_packet(device: &Device) -> Result<(), AppError> {
     let mac = parse_mac_address(&device.mac_address).map_err(AppError::InvalidMac)?;
 
@@ -17,6 +19,7 @@ pub fn send_wol_packet(device: &Device) -> Result<(), AppError> {
         .send_to(&magic_packet, target_addr)
         .map_err(AppError::Network)?;
 
+    debug!(target_addr = %target_addr, packet_size = magic_packet.len(), "Magic packet sent");
     Ok(())
 }
 

@@ -1,4 +1,5 @@
 use parking_lot::RwLock;
+use tracing::{debug, info, instrument};
 
 use crate::error::AppError;
 use crate::models::Device;
@@ -20,8 +21,10 @@ impl DeviceStorage {
         }
     }
 
+    #[instrument(skip_all, fields(path = %path))]
     pub fn load(path: &str) -> Result<Self, AppError> {
         if !Path::new(path).exists() {
+            info!("Storage file not found, starting fresh");
             return Ok(Self::new(path));
         }
 
@@ -29,50 +32,66 @@ impl DeviceStorage {
         let devices: Vec<Device> =
             serde_json::from_str(&content).map_err(AppError::StorageParse)?;
 
+        info!(device_count = devices.len(), "Storage loaded");
         Ok(Self {
             path: path.to_string(),
             devices,
         })
     }
 
+    #[instrument(skip_all, fields(path = %self.path))]
     pub fn save(&self) -> Result<(), AppError> {
         let content =
             serde_json::to_string_pretty(&self.devices).map_err(AppError::StorageParse)?;
 
-        fs::write(&self.path, content).map_err(AppError::StorageIo)
+        fs::write(&self.path, content).map_err(AppError::StorageIo)?;
+        debug!(device_count = self.devices.len(), "Storage saved");
+        Ok(())
     }
 
+    #[instrument(skip_all)]
     pub fn add(&mut self, device: Device) -> Result<(), AppError> {
         self.devices.push(device);
         self.save()
     }
 
+    #[instrument(skip_all)]
     pub fn add_all(&mut self, devices: Vec<Device>) -> Result<(), AppError> {
         self.devices.extend(devices);
         self.save()
     }
 
+    #[instrument(skip_all)]
     pub fn remove(&mut self, id: &str) -> Result<Option<Device>, AppError> {
         let index = self.devices.iter().position(|d| d.id == id);
         match index {
             Some(i) => {
                 let device = self.devices.remove(i);
                 self.save()?;
+                debug!("Device removed from storage");
                 Ok(Some(device))
             }
-            None => Ok(None),
+            None => {
+                debug!("Device not found in storage");
+                Ok(None)
+            }
         }
     }
 
+    #[instrument(skip_all)]
     pub fn update(&mut self, id: &str, device: Device) -> Result<Option<Device>, AppError> {
         let index = self.devices.iter().position(|d| d.id == id);
         match index {
             Some(i) => {
                 self.devices[i] = device;
                 self.save()?;
+                debug!("Device updated in storage");
                 Ok(self.devices.get(i).cloned())
             }
-            None => Ok(None),
+            None => {
+                debug!("Device not found in storage");
+                Ok(None)
+            }
         }
     }
 
