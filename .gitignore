@@ -18,6 +18,7 @@ Thumbs.db
 
 # Local data
 devices.json
+config.toml
 
 # Logs
 *.log
