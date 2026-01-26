@@ -46,7 +46,7 @@ See `config.toml.example` for all available options.
 Run with Docker Compose:
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 ### Networking Requirements
