@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       test_mode:
-        description: 'Test mode (skips version validation and uses test tags)'
+        description: "Test mode (skips version validation and uses test tags)"
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 env:
@@ -102,7 +102,7 @@ jobs:
 
   build-arm64:
     name: Build ARM64
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     needs: validate-version
     if: always() && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
     permissions:
@@ -113,9 +113,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
