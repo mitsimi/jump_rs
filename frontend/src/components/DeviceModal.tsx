@@ -64,6 +64,11 @@ export function DeviceModal({
             reset();
             onClose();
           },
+          onError: (error) => {
+            const errorMessage =
+              error instanceof Error ? error.message : "Failed to save changes";
+            toast.showToast(errorMessage, "error");
+          },
         },
       );
     } else {
@@ -71,6 +76,11 @@ export function DeviceModal({
         onSuccess: () => {
           reset();
           onClose();
+        },
+        onError: (error) => {
+          const errorMessage =
+            error instanceof Error ? error.message : "Failed to create device";
+          toast.showToast(errorMessage, "error");
         },
       });
     }
@@ -85,11 +95,9 @@ export function DeviceModal({
 
     lookupMac.mutate(ip, {
       onSuccess: (result) => {
-        // Success - mac is always present in successful response
         setValue("mac_address", result.mac);
       },
       onError: (error) => {
-        // Backend throws ApiError with message
         const errorMessage =
           error instanceof Error
             ? error.message
