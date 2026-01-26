@@ -40,8 +40,8 @@ fn init_tracing() {
     {
         use opentelemetry::KeyValue;
         use opentelemetry::trace::TracerProvider;
-        use opentelemetry_sdk::Resource;
         use opentelemetry_otlp::WithExportConfig;
+        use opentelemetry_sdk::Resource;
 
         if let Some(endpoint) = &config.otel.endpoint {
             let service_name = &config.otel.service_name;
@@ -88,7 +88,7 @@ async fn main() {
     let config = match config::init() {
         Ok(config) => config,
         Err(err) => {
-            eprintln!("Failed to load configuration: {}", err);
+            eprintln!("Failed to load configuration: {err}");
             std::process::exit(1);
         }
     };
@@ -191,8 +191,8 @@ async fn shutdown_signal() {
     let terminate = std::future::pending::<()>();
 
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        () = ctrl_c => {},
+        () = terminate => {},
     }
 
     info!("Shutdown signal received");

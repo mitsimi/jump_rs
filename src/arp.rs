@@ -10,13 +10,13 @@ pub fn lookup_mac(ip: &str) -> Result<String, AppError> {
     let ip_addr: Ipv4Addr = ip.parse().map_err(AppError::InvalidIp)?;
 
     debug!("Pinging IP to populate ARP cache");
-    ping_ip(&ip_addr).ok();
+    ping_ip(ip_addr).ok();
 
     get_mac_from_arp(ip)
 }
 
 #[instrument(skip_all)]
-fn ping_ip(ip: &Ipv4Addr) -> Result<(), AppError> {
+fn ping_ip(ip: Ipv4Addr) -> Result<(), AppError> {
     let output = Command::new("ping")
         .args(["-c", "1", "-W", "1", ip.to_string().as_str()])
         .output();

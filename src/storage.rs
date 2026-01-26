@@ -64,34 +64,28 @@ impl DeviceStorage {
     #[instrument(skip_all)]
     pub fn remove(&mut self, id: &str) -> Result<Option<Device>, AppError> {
         let index = self.devices.iter().position(|d| d.id == id);
-        match index {
-            Some(i) => {
-                let device = self.devices.remove(i);
-                self.save()?;
-                debug!("Device removed from storage");
-                Ok(Some(device))
-            }
-            None => {
-                debug!("Device not found in storage");
-                Ok(None)
-            }
+        if let Some(i) = index {
+            let device = self.devices.remove(i);
+            self.save()?;
+            debug!("Device removed from storage");
+            Ok(Some(device))
+        } else {
+            debug!("Device not found in storage");
+            Ok(None)
         }
     }
 
     #[instrument(skip_all)]
     pub fn update(&mut self, id: &str, device: Device) -> Result<Option<Device>, AppError> {
         let index = self.devices.iter().position(|d| d.id == id);
-        match index {
-            Some(i) => {
-                self.devices[i] = device;
-                self.save()?;
-                debug!("Device updated in storage");
-                Ok(self.devices.get(i).cloned())
-            }
-            None => {
-                debug!("Device not found in storage");
-                Ok(None)
-            }
+        if let Some(i) = index {
+            self.devices[i] = device;
+            self.save()?;
+            debug!("Device updated in storage");
+            Ok(self.devices.get(i).cloned())
+        } else {
+            debug!("Device not found in storage");
+            Ok(None)
         }
     }
 

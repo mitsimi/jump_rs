@@ -37,7 +37,7 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    pub fn as_filter(&self) -> &'static str {
+    pub fn as_filter(self) -> &'static str {
         match self {
             LogLevel::Trace => "trace,tower_http=trace",
             LogLevel::Debug => "debug,tower_http=debug",
