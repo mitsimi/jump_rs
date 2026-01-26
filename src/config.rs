@@ -126,7 +126,7 @@ pub fn get() -> &'static AppConfig {
 fn load() -> Result<AppConfig, ConfigError> {
     let config_path = env::var(CONFIG_PATH_ENV).unwrap_or_else(|_| DEFAULT_CONFIG_FILE.to_string());
 
-    let builder = Config::builder()
+    let mut builder = Config::builder()
         .set_default("server.port", 3000)?
         .set_default("server.log_level", "info")?
         .set_default("server.log_format", "compact")?
@@ -135,7 +135,7 @@ fn load() -> Result<AppConfig, ConfigError> {
 
     #[cfg(feature = "otlp")]
     {
-        builder.set_default("otel.service_name", "jump_rs")?;
+        builder = builder.set_default("otel.service_name", "jump_rs")?;
     }
 
     let config = builder
