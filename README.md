@@ -1,4 +1,4 @@
-# Jump.rs
+# Jumpers
 
 A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 
