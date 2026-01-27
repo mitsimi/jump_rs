@@ -2,7 +2,7 @@ use crate::error::AppError;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Device {
     pub id: String,
     pub name: String,
@@ -53,4 +53,128 @@ pub fn validate_mac_address(mac_str: &str) -> Result<(), AppError> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validate_mac_with_colons() {
+        assert!(validate_mac_address("AA:BB:CC:DD:EE:FF").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_with_dashes() {
+        assert!(validate_mac_address("AA-BB-CC-DD-EE-FF").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_with_dots() {
+        assert!(validate_mac_address("AABB.CCDD.EEFF").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_without_separators() {
+        assert!(validate_mac_address("AABBCCDDEEFF").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_lowercase() {
+        assert!(validate_mac_address("aa:bb:cc:dd:ee:ff").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_mixed_case() {
+        assert!(validate_mac_address("Aa:Bb:Cc:Dd:Ee:Ff").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_with_spaces() {
+        assert!(validate_mac_address("AA BB CC DD EE FF").is_ok());
+    }
+
+    #[test]
+    fn validate_mac_mixed_separators() {
+        assert!(validate_mac_address("AA:BB-CC.DD EE:FF").is_ok());
+    }
+
+    #[test]
+    fn reject_mac_too_short() {
+        let result = validate_mac_address("AA:BB:CC:DD:EE");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn reject_mac_too_long() {
+        let result = validate_mac_address("AA:BB:CC:DD:EE:FF:00");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn reject_mac_empty() {
+        let result = validate_mac_address("");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn reject_mac_invalid_hex_chars() {
+        let result = validate_mac_address("GG:HH:II:JJ:KK:LL");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn reject_mac_special_chars() {
+        let result = validate_mac_address("AA:BB:CC:DD:EE:F!");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reject_mac_partial_invalid() {
+        let result = validate_mac_address("AA:BB:CC:DD:EE:ZZ");
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn create_device_with_valid_mac() {
+        let device = Device::new(
+            "Test Device".to_string(),
+            "AA:BB:CC:DD:EE:FF".to_string(),
+            Some("192.168.1.100".to_string()),
+            9,
+            Some("Test description".to_string()),
+        );
+        assert!(device.is_ok());
+        let device = device.unwrap();
+        assert_eq!(device.name, "Test Device");
+        assert_eq!(device.mac_address, "AA:BB:CC:DD:EE:FF");
+        assert_eq!(device.port, 9);
+    }
+
+    #[test]
+    fn create_device_with_invalid_mac_fails() {
+        let result = Device::new("Test".to_string(), "invalid-mac".to_string(), None, 9, None);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+    }
+
+    #[test]
+    fn create_device_with_optional_fields_none() {
+        let device = Device::new(
+            "Minimal Device".to_string(),
+            "11:22:33:44:55:66".to_string(),
+            None,
+            9,
+            None,
+        )
+        .unwrap();
+
+        assert!(device.ip_address.is_none());
+        assert!(device.description.is_none());
+    }
 }
