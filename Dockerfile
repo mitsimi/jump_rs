@@ -12,6 +12,8 @@ RUN pnpm build
 # Stage 2: Build Rust application
 FROM rust:1-alpine AS rust-builder
 
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 COPY Cargo.toml Cargo.lock ./
