@@ -9,6 +9,7 @@ mod wol;
 use crate::config::LogFormat;
 use crate::storage::SharedStorage;
 use axum::{Router, http::Request};
+use clap::Parser;
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
@@ -18,9 +19,25 @@ use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_http::{LatencyUnit, request_id::RequestId};
 use tracing::{Span, error, info};
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use utoipa::OpenApi;
+
+#[derive(Parser)]
+#[command(name = "jump.rs", version, about = "Wake-on-LAN web server")]
+struct Cli {
+    /// Print OpenAPI spec to stdout and exit
+    #[arg(long)]
+    emit_openapi: bool,
+}
 
 #[tokio::main]
 async fn main() {
+    let cli = Cli::parse();
+
+    if cli.emit_openapi {
+        println!("{}", api::ApiDoc::openapi().to_pretty_json().unwrap());
+        return;
+    }
+
     let config = match config::init() {
         Ok(config) => config,
         Err(err) => {

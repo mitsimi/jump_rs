@@ -68,18 +68,3 @@ pub fn router() -> Router<SharedStorage> {
         .route("/api/devices/{id}/wake", post(wake_device))
         .route("/api/arp-lookup", post(arp_lookup))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use std::path::PathBuf;
-
-    #[test]
-    fn write_openapi_json() {
-        let spec = ApiDoc::openapi().to_pretty_json().unwrap();
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("frontend/openapi.json");
-        fs::write(path, spec).unwrap();
-    }
-}
