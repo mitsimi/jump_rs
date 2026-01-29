@@ -94,7 +94,7 @@ jobs:
       - name: Verify OpenAPI spec is up-to-date
         run: |
           cargo emit-openapi > frontend/openapi.json.new
-          if ! diff -q frontend/openapi.json frontend/openapi.json.new > /dev/null; then
+          if ! diff -q -Z frontend/openapi.json frontend/openapi.json.new > /dev/null; then
             echo "::error::OpenAPI spec is out of date!"
             echo ""
             echo "The committed openapi.json doesn't match the backend API."
@@ -103,7 +103,7 @@ jobs:
             echo "or"
             echo "  cargo gen-openapi"
             echo ""
-            diff frontend/openapi.json frontend/openapi.json.new || true
+            diff -Z frontend/openapi.json frontend/openapi.json.new || true
             exit 1
           fi
           echo "OpenAPI spec is up-to-date"
