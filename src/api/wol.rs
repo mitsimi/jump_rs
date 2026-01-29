@@ -4,14 +4,16 @@ use axum::{
 };
 use tracing::{info, instrument};
 
-use crate::{error::AppError, storage::SharedStorage, wol};
+use crate::{api::ApiResult, storage::SharedStorage, wol};
 
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn wake_device(
     State(storage): State<SharedStorage>,
     Path(id): Path<String>,
-) -> Result<StatusCode, AppError> {
-    let device = storage.get(&id).ok_or(AppError::DeviceNotFound(id))?;
+) -> ApiResult<StatusCode> {
+    let device = storage
+        .get(&id)
+        .ok_or(crate::storage::StorageError::NotFound(id))?;
 
     wol::send_wol_packet(&device)?;
 

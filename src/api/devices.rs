@@ -1,15 +1,13 @@
+use crate::api::ApiResult;
 use crate::config;
-use crate::error::AppError;
 use crate::models::{Device, validate_mac_address};
-use crate::storage::SharedStorage;
+use crate::storage::{SharedStorage, StorageError};
 use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use tracing::{info, instrument};
 
 #[instrument(skip_all)]
-pub async fn get_devices(
-    State(storage): State<SharedStorage>,
-) -> Result<Json<Vec<Device>>, AppError> {
+pub async fn get_devices(State(storage): State<SharedStorage>) -> ApiResult<Json<Vec<Device>>> {
     let devices = storage.get_all();
     info!(count = devices.len(), "Devices retrieved");
     Ok(Json(devices))
@@ -27,7 +25,7 @@ pub struct ExportResponse {
 #[instrument(skip_all)]
 pub async fn export_devices(
     State(storage): State<SharedStorage>,
-) -> Result<Json<Vec<ExportResponse>>, AppError> {
+) -> ApiResult<Json<Vec<ExportResponse>>> {
     let devices = storage.get_all();
     let count = devices.len();
     let result: Vec<ExportResponse> = devices
@@ -57,7 +55,7 @@ pub struct ImportRequest {
 pub async fn import_devices(
     State(storage): State<SharedStorage>,
     Json(req): Json<Vec<ImportRequest>>,
-) -> Result<(StatusCode, Json<Vec<Device>>), AppError> {
+) -> ApiResult<(StatusCode, Json<Vec<Device>>)> {
     let mut devices = Vec::new();
     for device in req {
         let device = Device::new(
@@ -87,7 +85,7 @@ pub struct CreateDeviceRequest {
 pub async fn create_device(
     State(storage): State<SharedStorage>,
     Json(req): Json<CreateDeviceRequest>,
-) -> Result<(StatusCode, Json<Device>), AppError> {
+) -> ApiResult<(StatusCode, Json<Device>)> {
     let device = Device::new(
         req.name,
         req.mac_address,
@@ -116,10 +114,8 @@ pub async fn update_device(
     State(storage): State<SharedStorage>,
     Path(id): Path<String>,
     Json(req): Json<UpdateDeviceRequest>,
-) -> Result<Json<Device>, AppError> {
-    let existing = storage
-        .get(&id)
-        .ok_or(AppError::DeviceNotFound(id.clone()))?;
+) -> ApiResult<Json<Device>> {
+    let existing = storage.get(&id).ok_or(StorageError::NotFound(id.clone()))?;
 
     let mac_address = match req.mac_address {
         Some(mac) => {
@@ -148,7 +144,7 @@ pub async fn update_device(
 pub async fn delete_device(
     State(storage): State<SharedStorage>,
     Path(id): Path<String>,
-) -> Result<StatusCode, AppError> {
+) -> ApiResult<StatusCode> {
     storage.remove(&id)?;
     info!("Device deleted");
     Ok(StatusCode::NO_CONTENT)

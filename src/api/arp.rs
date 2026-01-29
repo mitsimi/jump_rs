@@ -1,7 +1,7 @@
 use axum::Json;
 use tracing::{info, instrument};
 
-use crate::{arp, error::AppError};
+use crate::{api::ApiResult, arp};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ArpLookupRequest {
@@ -14,9 +14,7 @@ pub struct ArpLookupResponse {
 }
 
 #[instrument(skip_all, fields(target_ip = %req.ip))]
-pub async fn arp_lookup(
-    Json(req): Json<ArpLookupRequest>,
-) -> Result<Json<ArpLookupResponse>, AppError> {
+pub async fn arp_lookup(Json(req): Json<ArpLookupRequest>) -> ApiResult<Json<ArpLookupResponse>> {
     let mac = arp::lookup_mac(&req.ip)?;
     info!(mac = %mac, "ARP lookup successful");
     Ok(Json(ArpLookupResponse { mac }))

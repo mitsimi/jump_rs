@@ -1,6 +1,12 @@
-use crate::error::AppError;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 use uuid::Uuid;
+
+#[derive(Debug, Error)]
+pub enum ValidationError {
+    #[error("Invalid MAC address format: {0}")]
+    InvalidMac(String),
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Device {
@@ -20,7 +26,7 @@ impl Device {
         ip_address: Option<String>,
         port: u16,
         description: Option<String>,
-    ) -> Result<Self, AppError> {
+    ) -> Result<Self, ValidationError> {
         validate_mac_address(&mac_address)?;
 
         Ok(Self {
@@ -35,20 +41,20 @@ impl Device {
     }
 }
 
-pub fn validate_mac_address(mac_str: &str) -> Result<(), AppError> {
+pub fn validate_mac_address(mac_str: &str) -> Result<(), ValidationError> {
     let cleaned: String = mac_str.replace([':', '-', '.', ' '], "").to_lowercase();
 
     if cleaned.len() != 12 {
-        return Err(AppError::InvalidMac(mac_str.to_string()));
+        return Err(ValidationError::InvalidMac(mac_str.to_string()));
     }
 
     for (i, chunk) in cleaned.as_bytes().chunks(2).enumerate() {
         if i >= 6 {
-            return Err(AppError::InvalidMac(mac_str.to_string()));
+            return Err(ValidationError::InvalidMac(mac_str.to_string()));
         }
         let hex_str = std::str::from_utf8(chunk).unwrap();
         if u8::from_str_radix(hex_str, 16).is_err() {
-            return Err(AppError::InvalidMac(mac_str.to_string()));
+            return Err(ValidationError::InvalidMac(mac_str.to_string()));
         }
     }
 
@@ -62,6 +68,12 @@ mod tests {
     #[test]
     fn validate_mac_with_colons() {
         assert!(validate_mac_address("AA:BB:CC:DD:EE:FF").is_ok());
+    }
+
+    #[test]
+    fn validation_error_display() {
+        let err = ValidationError::InvalidMac("bad-mac".to_string());
+        assert!(err.to_string().contains("bad-mac"));
     }
 
     #[test]
@@ -103,28 +115,40 @@ mod tests {
     fn reject_mac_too_short() {
         let result = validate_mac_address("AA:BB:CC:DD:EE");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]
     fn reject_mac_too_long() {
         let result = validate_mac_address("AA:BB:CC:DD:EE:FF:00");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]
     fn reject_mac_empty() {
         let result = validate_mac_address("");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]
     fn reject_mac_invalid_hex_chars() {
         let result = validate_mac_address("GG:HH:II:JJ:KK:LL");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]
@@ -137,7 +161,10 @@ mod tests {
     fn reject_mac_partial_invalid() {
         let result = validate_mac_address("AA:BB:CC:DD:EE:ZZ");
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]
@@ -160,7 +187,10 @@ mod tests {
     fn create_device_with_invalid_mac_fails() {
         let result = Device::new("Test".to_string(), "invalid-mac".to_string(), None, 9, None);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::InvalidMac(_)));
+        assert!(matches!(
+            result.unwrap_err(),
+            ValidationError::InvalidMac(_)
+        ));
     }
 
     #[test]

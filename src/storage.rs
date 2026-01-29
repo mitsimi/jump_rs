@@ -1,11 +1,23 @@
 use parking_lot::RwLock;
+use thiserror::Error;
 use tracing::{debug, info, instrument};
 
-use crate::error::AppError;
 use crate::models::Device;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
+
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error("Storage IO error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Storage data corruption: {0}")]
+    Parse(#[from] serde_json::Error),
+
+    #[error("Device not found: {0}")]
+    NotFound(String),
+}
 
 #[derive(Debug, Clone)]
 pub struct DeviceStorage {
@@ -22,17 +34,17 @@ impl DeviceStorage {
     }
 
     #[instrument(skip_all, fields(path = %path))]
-    pub fn load(path: &str) -> Result<Self, AppError> {
+    pub fn load(path: &str) -> Result<Self, StorageError> {
         if !Path::new(path).exists() {
             info!("Storage file not found, starting fresh");
             return Ok(Self::new(path));
         }
 
-        let content = fs::read_to_string(path).map_err(AppError::StorageIo)?;
+        let content = fs::read_to_string(path)?;
         let devices: Vec<Device> = if content.trim().is_empty() {
             Vec::new()
         } else {
-            serde_json::from_str(&content).map_err(AppError::StorageParse)?
+            serde_json::from_str(&content)?
         };
 
         info!(device_count = devices.len(), "Storage loaded");
@@ -43,43 +55,42 @@ impl DeviceStorage {
     }
 
     #[instrument(skip_all, fields(path = %self.path))]
-    pub fn save(&self) -> Result<(), AppError> {
-        let content =
-            serde_json::to_string_pretty(&self.devices).map_err(AppError::StorageParse)?;
+    pub fn save(&self) -> Result<(), StorageError> {
+        let content = serde_json::to_string_pretty(&self.devices)?;
 
-        fs::write(&self.path, content).map_err(AppError::StorageIo)?;
+        fs::write(&self.path, content)?;
         debug!(device_count = self.devices.len(), "Storage saved");
         Ok(())
     }
 
     #[instrument(skip_all)]
-    pub fn add(&mut self, device: Device) -> Result<(), AppError> {
+    pub fn add(&mut self, device: Device) -> Result<(), StorageError> {
         self.devices.push(device);
         self.save()
     }
 
     #[instrument(skip_all)]
-    pub fn add_all(&mut self, devices: Vec<Device>) -> Result<(), AppError> {
+    pub fn add_all(&mut self, devices: Vec<Device>) -> Result<(), StorageError> {
         self.devices.extend(devices);
         self.save()
     }
 
     #[instrument(skip_all)]
-    pub fn remove(&mut self, id: &str) -> Result<Option<Device>, AppError> {
+    pub fn remove(&mut self, id: &str) -> Result<Device, StorageError> {
         let index = self.devices.iter().position(|d| d.id == id);
         if let Some(i) = index {
             let device = self.devices.remove(i);
             self.save()?;
             debug!("Device removed from storage");
-            Ok(Some(device))
+            Ok(device)
         } else {
             debug!("Device not found in storage");
-            Ok(None)
+            Err(StorageError::NotFound(id.to_string()))
         }
     }
 
     #[instrument(skip_all)]
-    pub fn update(&mut self, id: &str, device: Device) -> Result<Option<Device>, AppError> {
+    pub fn update(&mut self, id: &str, device: Device) -> Result<Device, StorageError> {
         let index = self.devices.iter().position(|d| d.id == id);
         if let Some(i) = index {
             self.devices[i] = Device {
@@ -88,10 +99,10 @@ impl DeviceStorage {
             };
             self.save()?;
             debug!("Device updated in storage");
-            Ok(self.devices.get(i).cloned())
+            Ok(self.devices.get(i).cloned().unwrap())
         } else {
             debug!("Device not found in storage");
-            Ok(None)
+            Err(StorageError::NotFound(id.to_string()))
         }
     }
 
@@ -108,23 +119,23 @@ impl DeviceStorage {
 pub struct SharedStorage(Arc<RwLock<DeviceStorage>>);
 
 impl SharedStorage {
-    pub fn load(path: &str) -> Result<Self, AppError> {
+    pub fn load(path: &str) -> Result<Self, StorageError> {
         Ok(Self(Arc::new(RwLock::new(DeviceStorage::load(path)?))))
     }
 
-    pub fn add(&self, device: Device) -> Result<(), AppError> {
+    pub fn add(&self, device: Device) -> Result<(), StorageError> {
         self.0.write().add(device)
     }
 
-    pub fn add_all(&self, devices: Vec<Device>) -> Result<(), AppError> {
+    pub fn add_all(&self, devices: Vec<Device>) -> Result<(), StorageError> {
         self.0.write().add_all(devices)
     }
 
-    pub fn remove(&self, id: &str) -> Result<Option<Device>, AppError> {
+    pub fn remove(&self, id: &str) -> Result<Device, StorageError> {
         self.0.write().remove(id)
     }
 
-    pub fn update(&self, id: &str, device: Device) -> Result<Option<Device>, AppError> {
+    pub fn update(&self, id: &str, device: Device) -> Result<Device, StorageError> {
         self.0.write().update(id, device)
     }
 
@@ -227,19 +238,18 @@ mod tests {
         storage.add(device.clone()).unwrap();
 
         let removed = storage.remove(&device.id).unwrap();
-        assert!(removed.is_some());
-        assert_eq!(removed.unwrap(), device);
+        assert_eq!(removed, device);
         assert_eq!(storage.devices.len(), 0);
     }
 
     #[test]
-    fn remove_nonexistent_device_returns_none() {
+    fn remove_nonexistent_device_returns_error() {
         let dir = TempDir::new().unwrap();
         let path = temp_storage_path(&dir);
         let mut storage = DeviceStorage::new(&path);
 
-        let removed = storage.remove("nonexistent-id").unwrap();
-        assert!(removed.is_none());
+        let result = storage.remove("nonexistent-id");
+        assert!(matches!(result, Err(StorageError::NotFound(_))));
     }
 
     #[test]
@@ -251,7 +261,7 @@ mod tests {
         let device = create_test_device("Device 1");
         storage.add(device).unwrap();
 
-        let _ = storage.remove("nonexistent-id").unwrap();
+        let _ = storage.remove("nonexistent-id");
         assert!(storage.devices.len() == 1);
     }
 
@@ -269,8 +279,7 @@ mod tests {
         let result = storage.update(&device.id, updated_device.clone()).unwrap();
 
         updated_device.id = device.id.clone();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap(), updated_device);
+        assert_eq!(result, updated_device);
     }
 
     #[test]
@@ -286,19 +295,18 @@ mod tests {
         updated_device.id = device.id.clone();
 
         let result = storage.update(&device.id, updated_device.clone()).unwrap();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap(), updated_device);
+        assert_eq!(result, updated_device);
     }
 
     #[test]
-    fn update_nonexistent_device_returns_none() {
+    fn update_nonexistent_device_returns_error() {
         let dir = TempDir::new().unwrap();
         let path = temp_storage_path(&dir);
         let mut storage = DeviceStorage::new(&path);
 
         let device = create_test_device("Test");
-        let result = storage.update("nonexistent-id", device).unwrap();
-        assert!(result.is_none());
+        let result = storage.update("nonexistent-id", device);
+        assert!(matches!(result, Err(StorageError::NotFound(_))));
     }
 
     #[test]
@@ -467,7 +475,7 @@ mod tests {
         storage.add(device.clone()).unwrap();
 
         let removed = storage.remove(&device.id).unwrap();
-        assert!(removed.is_some());
+        assert_eq!(removed, device);
         assert!(storage.get(&device.id).is_none());
     }
 

@@ -6,11 +6,13 @@ pub use arp::*;
 pub use devices::*;
 pub use wol::wake_device;
 
-use crate::storage::SharedStorage;
+use crate::{error::ApiError, storage::SharedStorage};
 use axum::{
     Router,
     routing::{get, post, put},
 };
+
+type ApiResult<T> = std::result::Result<T, ApiError>;
 
 /// Creates and configures the API router with all API routes
 pub fn router() -> Router<SharedStorage> {

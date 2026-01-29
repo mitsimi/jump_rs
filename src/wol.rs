@@ -1,23 +1,32 @@
-use crate::error::AppError;
 use crate::models::Device;
 use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
+use thiserror::Error;
 use tracing::{debug, instrument};
 
+#[derive(Debug, Error)]
+pub enum WolError {
+    #[error("Invalid MAC address: {0}")]
+    InvalidMac(String),
+
+    #[error("Network error: {0}")]
+    Network(#[source] std::io::Error),
+}
+
 #[instrument(skip_all)]
-pub fn send_wol_packet(device: &Device) -> Result<(), AppError> {
-    let mac = parse_mac_address(&device.mac_address).map_err(AppError::InvalidMac)?;
+pub fn send_wol_packet(device: &Device) -> Result<(), WolError> {
+    let mac = parse_mac_address(&device.mac_address).map_err(WolError::InvalidMac)?;
 
     let magic_packet = create_magic_packet(mac);
 
-    let socket = UdpSocket::bind("0.0.0.0:0").map_err(AppError::Network)?;
+    let socket = UdpSocket::bind("0.0.0.0:0").map_err(WolError::Network)?;
 
     let target_addr = SocketAddr::new(Ipv4Addr::BROADCAST.into(), device.port);
 
-    socket.set_broadcast(true).map_err(AppError::Network)?;
+    socket.set_broadcast(true).map_err(WolError::Network)?;
 
     socket
         .send_to(&magic_packet, target_addr)
-        .map_err(AppError::Network)?;
+        .map_err(WolError::Network)?;
 
     debug!(target_addr = %target_addr, packet_size = magic_packet.len(), "Magic packet sent");
     Ok(())

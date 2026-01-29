@@ -2,41 +2,46 @@ use axum::{http::StatusCode, response::IntoResponse};
 use thiserror::Error;
 use tracing::{error, warn};
 
+use crate::arp::ArpError;
+use crate::models::ValidationError;
+use crate::storage::StorageError;
+use crate::wol::WolError;
+
 #[derive(Debug, Error)]
-pub enum AppError {
-    #[error("Storage error: {0}")]
-    StorageIo(#[source] std::io::Error),
+pub enum ApiError {
+    #[error(transparent)]
+    Validation(#[from] ValidationError),
 
-    #[error("Storage data corruption: {0}")]
-    StorageParse(#[source] serde_json::Error),
+    #[error(transparent)]
+    Storage(#[from] StorageError),
 
-    #[error("Invalid MAC address format - {0}")]
-    InvalidMac(String),
+    #[error(transparent)]
+    Wol(#[from] WolError),
 
-    #[error("Invalid IP address format: {0}")]
-    InvalidIp(#[source] std::net::AddrParseError),
-
-    #[error("Network error: {0}")]
-    Network(#[source] std::io::Error),
-
-    #[error("Failed to query ARP table: {0}")]
-    ArpQuery(#[source] std::io::Error),
-
-    #[error("Device {0} not found")]
-    DeviceNotFound(String),
+    #[error(transparent)]
+    Arp(#[from] ArpError),
 }
 
-#[allow(clippy::match_same_arms)]
-impl AppError {
+impl ApiError {
     fn status_code(&self) -> StatusCode {
         match self {
-            AppError::DeviceNotFound(_) => StatusCode::NOT_FOUND,
-            AppError::InvalidMac(_) => StatusCode::BAD_REQUEST,
-            AppError::InvalidIp(_) => StatusCode::BAD_REQUEST,
-            AppError::StorageIo(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::StorageParse(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::Network(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            AppError::ArpQuery(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Validation(_) => StatusCode::BAD_REQUEST,
+
+            ApiError::Storage(e) => match e {
+                StorageError::NotFound(_) => StatusCode::NOT_FOUND,
+                StorageError::Io(_) | StorageError::Parse(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+
+            ApiError::Wol(e) => match e {
+                WolError::InvalidMac(_) => StatusCode::BAD_REQUEST,
+                WolError::Network(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+
+            ApiError::Arp(e) => match e {
+                ArpError::InvalidIp(_) => StatusCode::BAD_REQUEST,
+                ArpError::NotFound(_) => StatusCode::NOT_FOUND,
+                ArpError::Query(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            },
         }
     }
 
@@ -44,67 +49,89 @@ impl AppError {
         let status_code = status.as_u16();
 
         match self {
-            AppError::DeviceNotFound(id) => {
+            ApiError::Validation(e) => {
                 warn!(
-                    error_type = "device_not_found",
-                    status_code = status_code,
-                    device_id = %id,
-                    "Request failed"
-                );
-            }
-            AppError::InvalidMac(mac) => {
-                warn!(
-                    error_type = "invalid_mac",
-                    status_code = status_code,
-                    mac = %mac,
-                    "Request failed"
-                );
-            }
-            AppError::InvalidIp(e) => {
-                warn!(
-                    error_type = "invalid_ip",
+                    error_type = "validation",
                     status_code = status_code,
                     details = %e,
                     "Request failed"
                 );
             }
-            AppError::StorageIo(e) => {
-                error!(
-                    error_type = "storage_io",
-                    status_code = status_code,
-                    details = %e,
-                    "Request failed"
-                );
-            }
-            AppError::StorageParse(e) => {
-                error!(
-                    error_type = "storage_parse",
-                    status_code = status_code,
-                    details = %e,
-                    "Request failed"
-                );
-            }
-            AppError::Network(e) => {
-                error!(
-                    error_type = "network",
-                    status_code = status_code,
-                    details = %e,
-                    "Request failed"
-                );
-            }
-            AppError::ArpQuery(e) => {
-                error!(
-                    error_type = "arp_query",
-                    status_code = status_code,
-                    details = %e,
-                    "Request failed"
-                );
-            }
+            ApiError::Storage(e) => match e {
+                StorageError::NotFound(id) => {
+                    warn!(
+                        error_type = "storage_not_found",
+                        status_code = status_code,
+                        device_id = %id,
+                        "Request failed"
+                    );
+                }
+                StorageError::Io(err) => {
+                    error!(
+                        error_type = "storage_io",
+                        status_code = status_code,
+                        details = %err,
+                        "Request failed"
+                    );
+                }
+                StorageError::Parse(err) => {
+                    error!(
+                        error_type = "storage_parse",
+                        status_code = status_code,
+                        details = %err,
+                        "Request failed"
+                    );
+                }
+            },
+            ApiError::Wol(e) => match e {
+                WolError::InvalidMac(mac) => {
+                    warn!(
+                        error_type = "wol_invalid_mac",
+                        status_code = status_code,
+                        mac = %mac,
+                        "Request failed"
+                    );
+                }
+                WolError::Network(err) => {
+                    error!(
+                        error_type = "wol_network",
+                        status_code = status_code,
+                        details = %err,
+                        "Request failed"
+                    );
+                }
+            },
+            ApiError::Arp(e) => match e {
+                ArpError::InvalidIp(err) => {
+                    warn!(
+                        error_type = "arp_invalid_ip",
+                        status_code = status_code,
+                        details = %err,
+                        "Request failed"
+                    );
+                }
+                ArpError::NotFound(ip) => {
+                    warn!(
+                        error_type = "arp_not_found",
+                        status_code = status_code,
+                        ip = %ip,
+                        "Request failed"
+                    );
+                }
+                ArpError::Query(err) => {
+                    error!(
+                        error_type = "arp_query",
+                        status_code = status_code,
+                        details = %err,
+                        "Request failed"
+                    );
+                }
+            },
         }
     }
 }
 
-impl IntoResponse for AppError {
+impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let status_code = self.status_code();
         self.log(status_code);
