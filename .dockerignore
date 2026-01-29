@@ -1,8 +1,10 @@
 .git
-.gitignore
+**/.gitignore
 .DS_Store
+*.md
+LICENSE
 target
+static/dist
 frontend/node_modules
 frontend/dist
-static/dist
 *.log
