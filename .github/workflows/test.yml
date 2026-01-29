@@ -93,14 +93,14 @@ jobs:
 
       - name: Verify OpenAPI spec is up-to-date
         run: |
-          cargo run -- --emit-openapi > frontend/openapi.json.new
+          cargo emit-openapi > frontend/openapi.json.new
           if ! diff -q frontend/openapi.json frontend/openapi.json.new > /dev/null; then
             echo "::error::OpenAPI spec is out of date!"
             echo ""
             echo "The committed openapi.json doesn't match the backend API."
             echo "Run these commands to fix:"
-            echo "  cargo run -- --emit-openapi > frontend/openapi.json"
-            echo "  cd frontend && pnpm openapi-ts"
+            echo "  cargo run -- --gen-openapi"
+            echo "  cd frontend && pnpm gen:openapi"
             echo ""
             diff frontend/openapi.json frontend/openapi.json.new || true
             exit 1
@@ -110,13 +110,13 @@ jobs:
       - name: Verify generated client is up-to-date
         working-directory: frontend
         run: |
-          pnpm openapi-ts
+          pnpm gen:openapi
           if ! git diff --quiet src/api/generated/; then
             echo "::error::Generated API client is out of date!"
             echo ""
             echo "The committed generated files don't match the OpenAPI spec."
             echo "Run this command to fix:"
-            echo "  cd frontend && pnpm openapi-ts"
+            echo "  cd frontend && pnpm gen:openapi"
             echo ""
             git diff src/api/generated/
             exit 1
