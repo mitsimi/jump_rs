@@ -1,11 +1,13 @@
 mod api;
 mod arp;
+mod cli;
 mod config;
 mod error;
 mod models;
 mod storage;
 mod wol;
 
+use crate::cli::Cli;
 use crate::config::LogFormat;
 use crate::storage::SharedStorage;
 use axum::{Router, http::Request};
@@ -19,35 +21,13 @@ use tower_http::trace::{DefaultOnResponse, TraceLayer};
 use tower_http::{LatencyUnit, request_id::RequestId};
 use tracing::{Span, error, info};
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use utoipa::OpenApi;
-
-#[derive(Parser)]
-#[command(name = "jump.rs", version, about = "Wake-on-LAN web server")]
-struct Cli {
-    /// Print OpenAPI spec to stdout and exit
-    #[arg(long)]
-    emit_openapi: bool,
-
-    /// Generate OpenAPI spec to file and exit
-    #[arg(long)]
-    gen_openapi: bool,
-}
-
-const FRONTEND_DIR: &str = "../frontend";
 
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
 
-    if cli.emit_openapi {
-        println!("{}", api::ApiDoc::openapi().to_pretty_json().unwrap());
-        return;
-    }
-
-    if cli.gen_openapi {
-        let spec = api::ApiDoc::openapi();
-        let json = serde_json::to_string_pretty(&spec).unwrap();
-        std::fs::write(format!("{}/openapi.json", FRONTEND_DIR), json).unwrap();
+    // Handle CLI commands that exit before running the server
+    if cli.handle_commands() {
         return;
     }
 
