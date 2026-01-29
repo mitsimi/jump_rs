@@ -1,14 +1,17 @@
 mod api;
 mod arp;
+mod cli;
 mod config;
 mod error;
 mod models;
 mod storage;
 mod wol;
 
+use crate::cli::Cli;
 use crate::config::LogFormat;
 use crate::storage::SharedStorage;
 use axum::{Router, http::Request};
+use clap::Parser;
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
@@ -21,6 +24,13 @@ use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::Subs
 
 #[tokio::main]
 async fn main() {
+    let cli = Cli::parse();
+
+    // Handle CLI commands that exit before running the server
+    if cli.handle_commands() {
+        return;
+    }
+
     let config = match config::init() {
         Ok(config) => config,
         Err(err) => {

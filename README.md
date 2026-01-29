@@ -74,3 +74,21 @@ Run with OpenTelemetry tracing:
 ```bash
 cargo run --features otlp
 ```
+
+Generate OpenAPI specification:
+
+```bash
+cargo run -- --gen-openapi
+```
+
+or
+
+```bash
+cargo run gen-openapi
+```
+
+Generate client for frontend based on OpenAPI specification:
+
+```bash
+cd frontend && pnpm gen:openapi
+```

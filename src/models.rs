@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(Debug, Error)]
@@ -8,13 +9,19 @@ pub enum ValidationError {
     InvalidMac(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct Device {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
     pub id: String,
+    #[schema(example = "Gaming PC")]
     pub name: String,
+    #[schema(example = "00:11:22:33:44:55")]
     pub mac_address: String,
+    #[schema(example = "192.168.1.100")]
     pub ip_address: Option<String>,
+    #[schema(default = 9)]
     pub port: u16,
+    #[schema(example = "My main computer")]
     pub description: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }

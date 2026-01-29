@@ -22,3 +22,5 @@ config.toml
 
 # Logs
 *.log
+
+!.cargo/config.toml

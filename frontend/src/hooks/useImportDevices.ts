@@ -1,14 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { importDevices } from "../api/devices";
-import type { ExportDevice } from "../types/device";
+import {
+  importDevicesMutation,
+  getDevicesQueryKey,
+} from "../api/generated/@tanstack/react-query.gen";
 
 export function useImportDevices() {
   const queryClient = useQueryClient();
+  const queryKey = getDevicesQueryKey();
 
   return useMutation({
-    mutationFn: (devices: ExportDevice[]) => importDevices(devices),
+    ...importDevicesMutation(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["devices"] });
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 }

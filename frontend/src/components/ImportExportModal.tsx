@@ -4,7 +4,7 @@ import styles from "./ImportExportModal.module.css";
 import { useToast } from "../hooks/useToast";
 import { useExportDevices } from "../hooks/useExportDevices";
 import { useImportDevices } from "../hooks/useImportDevices";
-import type { ExportDevice } from "../types/device";
+import type { ImportDevice } from "../types/device";
 
 export function ImportExportModal({
   isOpen,
@@ -18,7 +18,7 @@ export function ImportExportModal({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
-  const exportMutation = useExportDevices();
+  const exportQuery = useExportDevices();
   const importMutation = useImportDevices();
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -46,47 +46,50 @@ export function ImportExportModal({
     }
   };
 
-  const handleExport = () => {
-    exportMutation.mutate(undefined, {
-      onSuccess: (devices) => {
-        const blob = new Blob([JSON.stringify(devices, null, 2)], {
-          type: "application/json",
-        });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `jump-devices-${new Date().toISOString().split("T")[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast("Device list exported successfully", "success");
-        onClose();
-      },
-      onError: () => {
-        showToast("Failed to export devices", "error");
-      },
-    });
+  const handleExport = async () => {
+    const result = await exportQuery.refetch();
+    if (result.data) {
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `jump-devices-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Device list exported successfully", "success");
+      onClose();
+    } else if (result.error) {
+      showToast("Failed to export devices", "error");
+    }
   };
 
   const handleFileImport = async (file: File) => {
     try {
       const text = await file.text();
-      const devices: ExportDevice[] = JSON.parse(text);
+      const devices: ImportDevice[] = JSON.parse(text);
 
-      importMutation.mutate(devices, {
-        onSuccess: (result) => {
-          showToast(
-            `Successfully imported ${result.length} device(s)`,
-            "success",
-          );
-          onClose();
+      importMutation.mutate(
+        { body: devices },
+        {
+          onSuccess: (result) => {
+            showToast(
+              `Successfully imported ${result.length} device(s)`,
+              "success",
+            );
+            onClose();
+          },
+          onError: (error) => {
+            showToast(
+              error instanceof Error
+                ? error.message
+                : "Failed to import devices",
+              "error",
+            );
+          },
         },
-        onError: (error) => {
-          showToast(
-            error instanceof Error ? error.message : "Failed to import devices",
-            "error",
-          );
-        },
-      });
+      );
     } catch (e) {
       showToast(
         e instanceof Error ? e.message : "Invalid JSON format",
@@ -99,23 +102,28 @@ export function ImportExportModal({
     if (!jsonInput.trim()) return;
 
     try {
-      const devices: ExportDevice[] = JSON.parse(jsonInput);
+      const devices: ImportDevice[] = JSON.parse(jsonInput);
 
-      importMutation.mutate(devices, {
-        onSuccess: (result) => {
-          showToast(
-            `Successfully imported ${result.length} device(s)`,
-            "success",
-          );
-          onClose();
+      importMutation.mutate(
+        { body: devices },
+        {
+          onSuccess: (result) => {
+            showToast(
+              `Successfully imported ${result.length} device(s)`,
+              "success",
+            );
+            onClose();
+          },
+          onError: (error) => {
+            showToast(
+              error instanceof Error
+                ? error.message
+                : "Failed to import devices",
+              "error",
+            );
+          },
         },
-        onError: (error) => {
-          showToast(
-            error instanceof Error ? error.message : "Failed to import devices",
-            "error",
-          );
-        },
-      });
+      );
     } catch (e) {
       showToast(
         e instanceof Error ? e.message : "Invalid JSON format",
