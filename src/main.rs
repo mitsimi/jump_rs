@@ -54,7 +54,7 @@ async fn main() {
     let app = Router::new()
         .fallback_service(ServeDir::new("static/dist"))
         .merge(api::router())
-        .with_state(storage.clone())
+        .with_state(storage)
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()
