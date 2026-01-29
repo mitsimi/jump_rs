@@ -18,7 +18,10 @@ pub fn router() -> Router<SharedStorage> {
         .route("/api/devices", get(get_devices).post(create_device))
         .route("/api/devices/export", get(export_devices))
         .route("/api/devices/import", post(import_devices))
-        .route("/api/devices/:id", put(update_device).delete(delete_device))
-        .route("/api/devices/:id/wake", post(wake_device))
+        .route(
+            "/api/devices/{id}",
+            put(update_device).delete(delete_device),
+        )
+        .route("/api/devices/{id}/wake", post(wake_device))
         .route("/api/arp-lookup", post(arp_lookup))
 }
