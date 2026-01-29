@@ -27,7 +27,13 @@ struct Cli {
     /// Print OpenAPI spec to stdout and exit
     #[arg(long)]
     emit_openapi: bool,
+
+    /// Generate OpenAPI spec to file and exit
+    #[arg(long)]
+    gen_openapi: bool,
 }
+
+const FRONTEND_DIR: &str = "../frontend";
 
 #[tokio::main]
 async fn main() {
@@ -35,6 +41,13 @@ async fn main() {
 
     if cli.emit_openapi {
         println!("{}", api::ApiDoc::openapi().to_pretty_json().unwrap());
+        return;
+    }
+
+    if cli.gen_openapi {
+        let spec = api::ApiDoc::openapi();
+        let json = serde_json::to_string_pretty(&spec).unwrap();
+        std::fs::write(format!("{}/openapi.json", FRONTEND_DIR), json).unwrap();
         return;
     }
 
