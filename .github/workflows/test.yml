@@ -100,7 +100,8 @@ jobs:
             echo "The committed openapi.json doesn't match the backend API."
             echo "Run these commands to fix:"
             echo "  cargo run -- --gen-openapi"
-            echo "  cd frontend && pnpm gen:openapi"
+            echo "or
+            echo "  cargo gen-openapi"
             echo ""
             diff frontend/openapi.json frontend/openapi.json.new || true
             exit 1
