@@ -1,11 +1,24 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use serde::Serialize;
 use thiserror::Error;
 use tracing::{error, warn};
+use utoipa::ToSchema;
 
 use crate::arp::ArpError;
 use crate::models::ValidationError;
 use crate::storage::StorageError;
 use crate::wol::WolError;
+
+/// Standard error response returned by all API endpoints
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ErrorResponse {
+    /// Always "error" for error responses
+    #[schema(example = "error")]
+    pub status: String,
+    /// Human-readable error message
+    #[schema(example = "Invalid MAC address format: xyz")]
+    pub message: String,
+}
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -136,10 +149,10 @@ impl IntoResponse for ApiError {
         let status_code = self.status_code();
         self.log(status_code);
 
-        let body = serde_json::json!({
-            "status": "error",
-            "message": self.to_string()
-        });
+        let body = ErrorResponse {
+            status: "error".to_string(),
+            message: self.to_string(),
+        };
 
         (status_code, axum::Json(body)).into_response()
     }

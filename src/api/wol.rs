@@ -4,8 +4,24 @@ use axum::{
 };
 use tracing::{info, instrument};
 
-use crate::{api::ApiResult, storage::SharedStorage, wol};
+use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage, wol};
 
+#[utoipa::path(
+    post,
+    path = "/api/devices/{id}/wake",
+    operation_id = "wakeDevice",
+    tag = "wol",
+    summary = "Wake a device",
+    description = "Sends a Wake-on-LAN magic packet to the device. The target device must have WoL enabled in BIOS and be connected via ethernet.",
+    params(
+        ("id" = String, Path, description = "Device UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+    ),
+    responses(
+        (status = 204, description = "WoL packet sent successfully"),
+        (status = 404, description = "Device not found", body = ErrorResponse),
+        (status = 500, description = "Network error while sending packet", body = ErrorResponse)
+    )
+)]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn wake_device(
     State(storage): State<SharedStorage>,
