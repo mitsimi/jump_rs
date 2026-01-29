@@ -1,8 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
-import { lookupMacAddress } from "../api/devices";
+import { arpLookupMutation } from "../api/generated/@tanstack/react-query.gen";
 
 export function useMacLookup() {
-  return useMutation({
-    mutationFn: (ip: string) => lookupMacAddress(ip),
-  });
+  return useMutation(arpLookupMutation());
 }

@@ -56,9 +56,17 @@ export function DeviceModal({
   }, [device, reset]);
 
   const onSubmit = async (data: DeviceFormData) => {
+    const body = {
+      name: data.name,
+      mac_address: data.mac_address,
+      ip_address: data.ip_address || null,
+      port: data.port ? parseInt(data.port, 10) : 9,
+      description: data.description || null,
+    };
+
     if (device) {
       await updateDevice.mutateAsync(
-        { id: device.id, data },
+        { path: { id: device.id }, body },
         {
           onSuccess: () => {
             reset();
@@ -72,17 +80,22 @@ export function DeviceModal({
         },
       );
     } else {
-      await createDevice.mutateAsync(data, {
-        onSuccess: () => {
-          reset();
-          onClose();
+      await createDevice.mutateAsync(
+        { body },
+        {
+          onSuccess: () => {
+            reset();
+            onClose();
+          },
+          onError: (error) => {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to create device";
+            toast.showToast(errorMessage, "error");
+          },
         },
-        onError: (error) => {
-          const errorMessage =
-            error instanceof Error ? error.message : "Failed to create device";
-          toast.showToast(errorMessage, "error");
-        },
-      });
+      );
     }
   };
 
@@ -93,18 +106,21 @@ export function DeviceModal({
       return;
     }
 
-    lookupMac.mutate(ip, {
-      onSuccess: (result) => {
-        setValue("mac_address", result.mac);
+    lookupMac.mutate(
+      { body: { ip } },
+      {
+        onSuccess: (result) => {
+          setValue("mac_address", result.mac);
+        },
+        onError: (error) => {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to lookup MAC address";
+          toast.showToast(errorMessage, "error");
+        },
       },
-      onError: (error) => {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "Failed to lookup MAC address";
-        toast.showToast(errorMessage, "error");
-      },
-    });
+    );
   };
 
   return (

@@ -18,20 +18,23 @@ export function DeviceGrid({ onAddDevice, onEditDevice }: DeviceGridProps) {
   const { showToast } = useToast();
 
   const handleWake = (device: Device) => {
-    wakeDevice.mutate(device.id, {
-      onSuccess: () => {
-        showToast(`Wake packet sent to ${device.name}`, "success");
+    wakeDevice.mutate(
+      { path: { id: device.id } },
+      {
+        onSuccess: () => {
+          showToast(`Wake packet sent to ${device.name}`, "success");
+        },
+        onError: () => {
+          showToast("Failed to send wake packet", "error");
+        },
       },
-      onError: () => {
-        showToast("Failed to send wake packet", "error");
-      },
-    });
+    );
   };
 
   const handleDelete = async (device: Device) => {
     if (confirm(`Remove ${device.name}?`)) {
       try {
-        await deleteDevice.mutateAsync(device.id);
+        await deleteDevice.mutateAsync({ path: { id: device.id } });
         showToast(`${device.name} removed`, "success");
       } catch {
         showToast("Failed to delete device", "error");

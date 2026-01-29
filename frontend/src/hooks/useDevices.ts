@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchDevices } from "../api/devices";
+import { getDevicesOptions } from "../api/generated/@tanstack/react-query.gen";
 
 export function useDevices() {
   return useQuery({
-    queryKey: ["devices"],
-    queryFn: fetchDevices,
+    ...getDevicesOptions(),
     staleTime: 30000,
     retry: 1,
   });

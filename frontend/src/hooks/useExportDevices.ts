@@ -1,8 +1,9 @@
-import { useMutation } from "@tanstack/react-query";
-import { exportDevices } from "../api/devices";
+import { useQuery } from "@tanstack/react-query";
+import { exportDevicesOptions } from "../api/generated/@tanstack/react-query.gen";
 
 export function useExportDevices() {
-  return useMutation({
-    mutationFn: () => exportDevices(),
+  return useQuery({
+    ...exportDevicesOptions(),
+    enabled: false,
   });
 }

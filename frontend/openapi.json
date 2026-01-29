@@ -1,0 +1,611 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "jump.rs",
+    "description": "Wake-on-LAN API for managing and waking network devices",
+    "license": {
+      "name": "MIT"
+    },
+    "version": "1.0.1"
+  },
+  "paths": {
+    "/api/arp-lookup": {
+      "post": {
+        "tags": ["network"],
+        "summary": "Look up MAC address by IP",
+        "description": "Queries the system's ARP table to find the MAC address for a given IPv4 address. The IP must have recently communicated with this host to appear in the ARP table.",
+        "operationId": "arpLookup",
+        "requestBody": {
+          "description": "IP address to look up",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArpLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MAC address found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArpLookupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid IP address format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "IP not found in ARP table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error querying ARP table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices": {
+      "get": {
+        "tags": ["devices"],
+        "summary": "List all devices",
+        "description": "Returns a list of all registered devices that can receive Wake-on-LAN packets.",
+        "operationId": "getDevices",
+        "responses": {
+          "200": {
+            "description": "List of all devices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Device"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["devices"],
+        "summary": "Create a new device",
+        "description": "Creates a new device that can receive Wake-on-LAN packets. The MAC address must be valid.",
+        "operationId": "createDevice",
+        "requestBody": {
+          "description": "Device to create",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Device created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g., invalid MAC address)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/export": {
+      "get": {
+        "tags": ["devices"],
+        "summary": "Export all devices",
+        "description": "Exports all devices in a portable format suitable for backup or migration. Does not include internal fields like id and created_at.",
+        "operationId": "exportDevices",
+        "responses": {
+          "200": {
+            "description": "Exported device list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExportResponse"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/import": {
+      "post": {
+        "tags": ["devices"],
+        "summary": "Import devices",
+        "description": "Imports multiple devices from a portable format. Useful for restoring backups or migrating from another system.",
+        "operationId": "importDevices",
+        "requestBody": {
+          "description": "List of devices to import",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ImportRequest"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Devices imported successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Device"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g., invalid MAC address)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}": {
+      "put": {
+        "tags": ["devices"],
+        "summary": "Update a device",
+        "description": "Updates an existing device. Only provided fields will be updated (partial update).",
+        "operationId": "updateDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Device UUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "requestBody": {
+          "description": "Fields to update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Device updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (e.g., invalid MAC address)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["devices"],
+        "summary": "Delete a device",
+        "description": "Permanently deletes a device from the system.",
+        "operationId": "deleteDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Device UUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Device deleted successfully"
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/devices/{id}/wake": {
+      "post": {
+        "tags": ["wol"],
+        "summary": "Wake a device",
+        "description": "Sends a Wake-on-LAN magic packet to the device. The target device must have WoL enabled in BIOS and be connected via ethernet.",
+        "operationId": "wakeDevice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Device UUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "WoL packet sent successfully"
+          },
+          "404": {
+            "description": "Device not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Network error while sending packet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ArpLookupRequest": {
+        "type": "object",
+        "required": ["ip"],
+        "properties": {
+          "ip": {
+            "type": "string",
+            "description": "IPv4 address to look up in the ARP table",
+            "example": "192.168.1.100"
+          }
+        }
+      },
+      "ArpLookupResponse": {
+        "type": "object",
+        "required": ["mac"],
+        "properties": {
+          "mac": {
+            "type": "string",
+            "description": "MAC address found for the given IP",
+            "example": "00:11:22:33:44:55"
+          }
+        }
+      },
+      "CreateDeviceRequest": {
+        "type": "object",
+        "required": ["name", "mac_address"],
+        "properties": {
+          "description": {
+            "type": ["string", "null"],
+            "example": "My main gaming rig"
+          },
+          "ip_address": {
+            "type": ["string", "null"],
+            "example": "192.168.1.100"
+          },
+          "mac_address": {
+            "type": "string",
+            "example": "00:11:22:33:44:55"
+          },
+          "name": {
+            "type": "string",
+            "example": "Gaming PC"
+          },
+          "port": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "example": 9,
+            "minimum": 0
+          }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "required": ["id", "name", "mac_address", "port", "created_at"],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "description": {
+            "type": ["string", "null"],
+            "example": "My main computer"
+          },
+          "id": {
+            "type": "string",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "ip_address": {
+            "type": ["string", "null"],
+            "example": "192.168.1.100"
+          },
+          "mac_address": {
+            "type": "string",
+            "example": "00:11:22:33:44:55"
+          },
+          "name": {
+            "type": "string",
+            "example": "Gaming PC"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "default": 9,
+            "minimum": 0
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Standard error response returned by all API endpoints",
+        "required": ["status", "message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "Invalid MAC address format: xyz"
+          },
+          "status": {
+            "type": "string",
+            "description": "Always \"error\" for error responses",
+            "example": "error"
+          }
+        }
+      },
+      "ExportResponse": {
+        "type": "object",
+        "required": ["name", "mac_address", "port"],
+        "properties": {
+          "description": {
+            "type": ["string", "null"],
+            "example": "My main gaming rig"
+          },
+          "ip_address": {
+            "type": ["string", "null"],
+            "example": "192.168.1.100"
+          },
+          "mac_address": {
+            "type": "string",
+            "example": "00:11:22:33:44:55"
+          },
+          "name": {
+            "type": "string",
+            "example": "Gaming PC"
+          },
+          "port": {
+            "type": "integer",
+            "format": "int32",
+            "example": 9,
+            "minimum": 0
+          }
+        }
+      },
+      "ImportRequest": {
+        "type": "object",
+        "required": ["name", "mac_address"],
+        "properties": {
+          "description": {
+            "type": ["string", "null"],
+            "example": "My main gaming rig"
+          },
+          "ip_address": {
+            "type": ["string", "null"],
+            "example": "192.168.1.100"
+          },
+          "mac_address": {
+            "type": "string",
+            "example": "00:11:22:33:44:55"
+          },
+          "name": {
+            "type": "string",
+            "example": "Gaming PC"
+          },
+          "port": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "example": 9,
+            "minimum": 0
+          }
+        }
+      },
+      "UpdateDeviceRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": ["string", "null"],
+            "example": "Updated description"
+          },
+          "ip_address": {
+            "type": ["string", "null"],
+            "example": "192.168.1.100"
+          },
+          "mac_address": {
+            "type": ["string", "null"],
+            "example": "00:11:22:33:44:55"
+          },
+          "name": {
+            "type": ["string", "null"],
+            "example": "Gaming PC"
+          },
+          "port": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "example": 9,
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "devices",
+      "description": "Device management endpoints"
+    },
+    {
+      "name": "wol",
+      "description": "Wake-on-LAN operations"
+    },
+    {
+      "name": "network",
+      "description": "Network utility endpoints"
+    }
+  ]
+}

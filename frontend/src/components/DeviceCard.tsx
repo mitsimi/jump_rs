@@ -17,19 +17,22 @@ export function DeviceCard({ device, onEdit }: DeviceCardProps) {
   const { showToast } = useToast();
 
   const handleWake = () => {
-    wakeDevice.mutate(device.id, {
-      onSuccess: () => {
-        showToast("Wake signal sent", "success");
+    wakeDevice.mutate(
+      { path: { id: device.id } },
+      {
+        onSuccess: () => {
+          showToast("Wake signal sent", "success");
+        },
+        onError: () => {
+          showToast("Failed to send wake signal", "error");
+        },
       },
-      onError: () => {
-        showToast("Failed to send wake signal", "error");
-      },
-    });
+    );
   };
 
   const handleDelete = () => {
     if (confirm(`Remove ${device.name}?`)) {
-      deleteDevice.mutate(device.id);
+      deleteDevice.mutate({ path: { id: device.id } });
     }
   };
 
