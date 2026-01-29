@@ -8,11 +8,7 @@ mod wol;
 
 use crate::config::LogFormat;
 use crate::storage::SharedStorage;
-use axum::{
-    Json, Router,
-    http::Request,
-    routing::{get, post, put},
-};
+use axum::{Router, http::Request};
 use std::net::SocketAddr;
 use tokio::signal;
 use tower_http::cors::{Any, CorsLayer};
@@ -57,18 +53,7 @@ async fn main() {
 
     let app = Router::new()
         .fallback_service(ServeDir::new("static/dist"))
-        .route(
-            "/api/devices",
-            get(api::get_devices).post(api::create_device),
-        )
-        .route("/api/devices/export", get(api::export_devices))
-        .route("/api/devices/import", post(api::import_devices))
-        .route(
-            "/api/devices/{id}",
-            put(api::update_device).delete(api::delete_device),
-        )
-        .route("/api/devices/{id}/wake", post(api::wake_device))
-        .route("/api/arp-lookup", post(api::arp_lookup))
+        .merge(api::router())
         .with_state(storage.clone())
         .layer(cors)
         .layer(
