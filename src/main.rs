@@ -59,12 +59,6 @@ async fn main() {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<axum::body::Body>| {
-                    // let request_id = request
-                    //     .headers()
-                    //     .get("x-request-id")
-                    //     .and_then(|v| v.to_str().ok())
-                    //     .unwrap_or("unknown");
-
                     let request_id = request
                         .extensions()
                         .get::<RequestId>()
