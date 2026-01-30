@@ -1,16 +1,26 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  updateDeviceMutation,
-  getDevicesQueryKey,
-} from "../api/generated/@tanstack/react-query.gen";
-import type { Device } from "../api/generated";
+import { updateDevice } from "../api/generated";
+import type { Device, UpdateDeviceRequest } from "../api/generated";
 
 export function useUpdateDevice() {
   const queryClient = useQueryClient();
-  const queryKey = getDevicesQueryKey();
+  const queryKey = ["devices"];
 
   return useMutation({
-    ...updateDeviceMutation(),
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateDeviceRequest;
+    }) => {
+      const { data: response } = await updateDevice({
+        path: { id },
+        body: data,
+        throwOnError: true,
+      });
+      return response as Device;
+    },
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey });
       const previousDevices = queryClient.getQueryData<Device[]>(queryKey);

@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { exportDevicesOptions } from "../api/generated/@tanstack/react-query.gen";
+import { exportDevices } from "../api/generated";
 
 export function useExportDevices() {
   return useQuery({
-    ...exportDevicesOptions(),
+    queryKey: ["devices", "export"],
+    queryFn: async () => {
+      const { data } = await exportDevices({ throwOnError: true });
+      return data;
+    },
     enabled: false,
   });
 }

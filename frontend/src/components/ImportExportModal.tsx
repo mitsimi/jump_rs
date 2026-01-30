@@ -70,26 +70,23 @@ export function ImportExportModal({
       const text = await file.text();
       const devices: ImportDevice[] = JSON.parse(text);
 
-      importMutation.mutate(
-        { body: devices },
-        {
-          onSuccess: (result) => {
-            showToast(
-              `Successfully imported ${result.length} device(s)`,
-              "success",
-            );
-            onClose();
-          },
-          onError: (error) => {
-            showToast(
-              error instanceof Error
-                ? error.message
-                : "Failed to import devices",
-              "error",
-            );
-          },
+      importMutation.mutate(devices, {
+        onSuccess: (result) => {
+          showToast(
+            `Successfully imported ${result.length} device(s)`,
+            "success",
+          );
+          onClose();
         },
-      );
+        onError: (error) => {
+          showToast(
+            error instanceof Error
+              ? error.message
+              : "Failed to import devices",
+            "error",
+          );
+        },
+      });
     } catch (e) {
       showToast(
         e instanceof Error ? e.message : "Invalid JSON format",
@@ -104,26 +101,23 @@ export function ImportExportModal({
     try {
       const devices: ImportDevice[] = JSON.parse(jsonInput);
 
-      importMutation.mutate(
-        { body: devices },
-        {
-          onSuccess: (result) => {
-            showToast(
-              `Successfully imported ${result.length} device(s)`,
-              "success",
-            );
-            onClose();
-          },
-          onError: (error) => {
-            showToast(
-              error instanceof Error
-                ? error.message
-                : "Failed to import devices",
-              "error",
-            );
-          },
+      importMutation.mutate(devices, {
+        onSuccess: (result) => {
+          showToast(
+            `Successfully imported ${result.length} device(s)`,
+            "success",
+          );
+          onClose();
         },
-      );
+        onError: (error) => {
+          showToast(
+            error instanceof Error
+              ? error.message
+              : "Failed to import devices",
+            "error",
+          );
+        },
+      });
     } catch (e) {
       showToast(
         e instanceof Error ? e.message : "Invalid JSON format",

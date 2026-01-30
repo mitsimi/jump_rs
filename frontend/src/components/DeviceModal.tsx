@@ -66,7 +66,7 @@ export function DeviceModal({
 
     if (device) {
       await updateDevice.mutateAsync(
-        { path: { id: device.id }, body },
+        { id: device.id, data: body },
         {
           onSuccess: () => {
             reset();
@@ -80,22 +80,19 @@ export function DeviceModal({
         },
       );
     } else {
-      await createDevice.mutateAsync(
-        { body },
-        {
-          onSuccess: () => {
-            reset();
-            onClose();
-          },
-          onError: (error) => {
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : "Failed to create device";
-            toast.showToast(errorMessage, "error");
-          },
+      await createDevice.mutateAsync(body, {
+        onSuccess: () => {
+          reset();
+          onClose();
         },
-      );
+        onError: (error) => {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to create device";
+          toast.showToast(errorMessage, "error");
+        },
+      });
     }
   };
 
@@ -106,21 +103,18 @@ export function DeviceModal({
       return;
     }
 
-    lookupMac.mutate(
-      { body: { ip } },
-      {
-        onSuccess: (result) => {
-          setValue("mac_address", result.mac);
-        },
-        onError: (error) => {
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Failed to lookup MAC address";
-          toast.showToast(errorMessage, "error");
-        },
+    lookupMac.mutate(ip, {
+      onSuccess: (result) => {
+        setValue("mac_address", result.mac);
       },
-    );
+      onError: (error) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to lookup MAC address";
+        toast.showToast(errorMessage, "error");
+      },
+    });
   };
 
   return (

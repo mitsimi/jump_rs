@@ -1,6 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
-import { wakeDeviceMutation } from "../api/generated/@tanstack/react-query.gen";
+import { wakeDevice } from "../api/generated";
 
 export function useWakeDevice() {
-  return useMutation(wakeDeviceMutation());
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await wakeDevice({ path: { id }, throwOnError: true });
+    },
+  });
 }

@@ -1,6 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
-import { arpLookupMutation } from "../api/generated/@tanstack/react-query.gen";
+import { arpLookup } from "../api/generated";
 
 export function useMacLookup() {
-  return useMutation(arpLookupMutation());
+  return useMutation({
+    mutationFn: async (ip: string) => {
+      const { data } = await arpLookup({ body: { ip }, throwOnError: true });
+      return data;
+    },
+  });
 }
