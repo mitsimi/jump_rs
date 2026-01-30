@@ -1039,6 +1039,7 @@ dependencies = [
  "chrono",
  "clap",
  "config",
+ "nanoid",
  "opentelemetry",
  "opentelemetry-otlp",
  "opentelemetry_sdk",
@@ -1055,7 +1056,6 @@ dependencies = [
  "tracing-subscriber",
  "utoipa",
  "utoipa-swagger-ui",
- "uuid",
  "wake-on-lan",
 ]
 
@@ -1160,6 +1160,15 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "nanoid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
+dependencies = [
+ "rand",
 ]
 
 [[package]]
@@ -2241,7 +2250,6 @@ dependencies = [
  "quote",
  "regex",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -2270,7 +2278,6 @@ checksum = "ee48d38b119b0cd71fe4141b30f5ba9c7c5d9f4e7a3a8b4a674e4b6ef789976f"
 dependencies = [
  "getrandom 0.3.4",
  "js-sys",
- "serde_core",
  "wasm-bindgen",
 ]
 

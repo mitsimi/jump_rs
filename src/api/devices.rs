@@ -191,7 +191,7 @@ pub struct UpdateDeviceRequest {
     summary = "Update a device",
     description = "Updates an existing device. Only provided fields will be updated (partial update).",
     params(
-        ("id" = String, Path, description = "Device UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        ("id" = String, Path, description = "Device ID", example = "V1StGXR8_Z5jdHi6B")
     ),
     request_body(content = UpdateDeviceRequest, description = "Fields to update"),
     responses(
@@ -240,7 +240,7 @@ pub async fn update_device(
     summary = "Delete a device",
     description = "Permanently deletes a device from the system.",
     params(
-        ("id" = String, Path, description = "Device UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        ("id" = String, Path, description = "Device ID", example = "V1StGXR8_Z5jdHi6B")
     ),
     responses(
         (status = 204, description = "Device deleted successfully"),

@@ -14,7 +14,7 @@ use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage, wol};
     summary = "Wake a device",
     description = "Sends a Wake-on-LAN magic packet to the device. The target device must have WoL enabled in BIOS and be connected via ethernet.",
     params(
-        ("id" = String, Path, description = "Device UUID", example = "550e8400-e29b-41d4-a716-446655440000")
+        ("id" = String, Path, description = "Device ID", example = "V1StGXR8_Z5jdHi6B")
     ),
     responses(
         (status = 204, description = "WoL packet sent successfully"),

@@ -264,12 +264,12 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Device UUID",
+            "description": "Device ID",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "550e8400-e29b-41d4-a716-446655440000"
+            "example": "V1StGXR8_Z5jdHi6B"
           }
         ],
         "requestBody": {
@@ -337,12 +337,12 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Device UUID",
+            "description": "Device ID",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "550e8400-e29b-41d4-a716-446655440000"
+            "example": "V1StGXR8_Z5jdHi6B"
           }
         ],
         "responses": {
@@ -384,12 +384,12 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Device UUID",
+            "description": "Device ID",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "example": "550e8400-e29b-41d4-a716-446655440000"
+            "example": "V1StGXR8_Z5jdHi6B"
           }
         ],
         "responses": {
@@ -511,7 +511,7 @@
           },
           "id": {
             "type": "string",
-            "example": "550e8400-e29b-41d4-a716-446655440000"
+            "example": "V1StGXR8_Z5jdHi6B"
           },
           "ip_address": {
             "type": [

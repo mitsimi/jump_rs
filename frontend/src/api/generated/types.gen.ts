@@ -228,7 +228,7 @@ export type DeleteDeviceData = {
     body?: never;
     path: {
         /**
-         * Device UUID
+         * Device ID
          */
         id: string;
     };
@@ -265,7 +265,7 @@ export type UpdateDeviceData = {
     body: UpdateDeviceRequest;
     path: {
         /**
-         * Device UUID
+         * Device ID
          */
         id: string;
     };
@@ -303,7 +303,7 @@ export type WakeDeviceData = {
     body?: never;
     path: {
         /**
-         * Device UUID
+         * Device ID
          */
         id: string;
     };

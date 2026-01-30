@@ -1,7 +1,7 @@
+use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 #[derive(Debug, Error)]
 pub enum ValidationError {
@@ -11,7 +11,7 @@ pub enum ValidationError {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct Device {
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    #[schema(example = "V1StGXR8_Z5jdHi6B")]
     pub id: String,
     #[schema(example = "Gaming PC")]
     pub name: String,
@@ -37,7 +37,7 @@ impl Device {
         validate_mac_address(&mac_address)?;
 
         Ok(Self {
-            id: Uuid::new_v4().to_string(),
+            id: nanoid!(10),
             name,
             mac_address,
             ip_address,

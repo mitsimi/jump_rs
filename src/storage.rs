@@ -156,7 +156,7 @@ mod tests {
     /// Helper to create a test device with a given name
     fn create_test_device(name: &str) -> Device {
         Device {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: nanoid::nanoid!(10),
             name: name.to_string(),
             mac_address: "AA:BB:CC:DD:EE:FF".to_string(),
             ip_address: Some("192.168.1.100".to_string()),
