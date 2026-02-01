@@ -112,7 +112,9 @@ pub async fn import_devices(
             device.name,
             device.mac_address,
             device.ip_address,
-            device.port.unwrap_or(config::get().wol.default_port),
+            device
+                .port
+                .unwrap_or_else(|| config::get().wol.default_port),
             device.description,
         )?;
         devices.push(device);
@@ -159,7 +161,7 @@ pub async fn create_device(
         req.name,
         req.mac_address,
         req.ip_address,
-        req.port.unwrap_or(config::get().wol.default_port),
+        req.port.unwrap_or_else(|| config::get().wol.default_port),
         req.description,
     )?;
 
@@ -207,7 +209,9 @@ pub async fn update_device(
     Path(id): Path<String>,
     Json(req): Json<UpdateDeviceRequest>,
 ) -> ApiResult<Json<Device>> {
-    let existing = storage.get(&id).ok_or(StorageError::NotFound(id.clone()))?;
+    let existing = storage
+        .get(&id)
+        .ok_or_else(|| StorageError::NotFound(id.clone()))?;
 
     let mac_address = match req.mac_address {
         Some(mac) => {

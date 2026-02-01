@@ -1,0 +1,24 @@
+// Folder-specific settings
+//
+// For a full list of overridable settings, and general information on folder-specific settings,
+// see the documentation: https://zed.dev/docs/configuring-zed#settings-files
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "check": {
+          "command": "clippy", // rust-analyzer.check.command (default: "check")
+          "extraArgs": [
+            "--",
+            "-Wclippy::pedantic",
+            "-Wclippy::nursery",
+            "-Aclippy::needless_for_each",
+          ],
+        },
+        "cargo": {
+          "features": "all",
+        },
+      },
+    },
+  },
+}

@@ -163,7 +163,7 @@ mod tests {
 
         // First 6 bytes should be 0xFF
         for (i, byte) in packet.iter().enumerate().take(6) {
-            assert_eq!(*byte, 0xFF, "Byte {} should be 0xFF", i);
+            assert_eq!(*byte, 0xFF, "Byte {i} should be 0xFF");
         }
     }
 
@@ -179,9 +179,7 @@ mod tests {
                 assert_eq!(
                     packet[offset + byte_idx],
                     *expected_byte,
-                    "MAC repetition {} byte {} mismatch",
-                    repetition,
-                    byte_idx
+                    "MAC repetition {repetition} byte {byte_idx} mismatch",
                 );
             }
         }
@@ -211,7 +209,7 @@ mod tests {
         assert_eq!(packet.len(), 102);
         // Entire packet should be 0xFF
         for (i, byte) in packet.iter().enumerate() {
-            assert_eq!(*byte, 0xFF, "Byte {} should be 0xFF", i);
+            assert_eq!(*byte, 0xFF, "Byte {i} should be 0xFF");
         }
     }
 

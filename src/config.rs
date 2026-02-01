@@ -37,13 +37,13 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    pub fn as_filter(self) -> &'static str {
+    pub const fn as_filter(self) -> &'static str {
         match self {
-            LogLevel::Trace => "trace,tower_http=trace",
-            LogLevel::Debug => "debug,tower_http=debug",
-            LogLevel::Info => "info,tower_http=debug",
-            LogLevel::Warn => "warn,tower_http=warn",
-            LogLevel::Error => "error,tower_http=error",
+            Self::Trace => "trace,tower_http=trace",
+            Self::Debug => "debug,tower_http=debug",
+            Self::Info => "info,tower_http=debug",
+            Self::Warn => "warn,tower_http=warn",
+            Self::Error => "error,tower_http=error",
         }
     }
 }
@@ -70,9 +70,9 @@ pub struct WolConfig {
 #[cfg(feature = "otlp")]
 #[derive(Debug, Deserialize)]
 pub struct OtelConfig {
-    /// OTLP endpoint URL (e.g., "http://localhost:4317"). If empty, OTEL is disabled.
+    /// OTLP endpoint URL (e.g., <http://localhost:4317>). If empty, OTEL is disabled.
     pub endpoint: Option<String>,
-    /// Service name for traces. Defaults to "jump_rs".
+    /// Service name for traces. Defaults to `jump_rs`.
     pub service_name: String,
 }
 

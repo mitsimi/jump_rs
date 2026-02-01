@@ -9,7 +9,7 @@ pub enum ValidationError {
     InvalidMac(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 pub struct Device {
     #[schema(example = "V1StGXR8_Z5jdHi6B")]
     pub id: String,

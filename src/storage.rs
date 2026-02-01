@@ -408,7 +408,7 @@ mod tests {
         // Save
         {
             let mut storage = DeviceStorage::new(&path);
-            storage.add(original_device.clone()).unwrap();
+            storage.add(original_device).unwrap();
         }
 
         // Load and verify

@@ -36,21 +36,21 @@ pub enum ApiError {
 }
 
 impl ApiError {
-    fn status_code(&self) -> StatusCode {
+    const fn status_code(&self) -> StatusCode {
         match self {
-            ApiError::Validation(_) => StatusCode::BAD_REQUEST,
+            Self::Validation(_) => StatusCode::BAD_REQUEST,
 
-            ApiError::Storage(e) => match e {
+            Self::Storage(e) => match e {
                 StorageError::NotFound(_) => StatusCode::NOT_FOUND,
                 StorageError::Io(_) | StorageError::Parse(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },
 
-            ApiError::Wol(e) => match e {
+            Self::Wol(e) => match e {
                 WolError::InvalidMac(_) => StatusCode::BAD_REQUEST,
                 WolError::Network(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },
 
-            ApiError::Arp(e) => match e {
+            Self::Arp(e) => match e {
                 ArpError::InvalidIp(_) => StatusCode::BAD_REQUEST,
                 ArpError::NotFound(_) => StatusCode::NOT_FOUND,
                 ArpError::Query(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -62,7 +62,7 @@ impl ApiError {
         let status_code = status.as_u16();
 
         match self {
-            ApiError::Validation(e) => {
+            Self::Validation(e) => {
                 warn!(
                     error_type = "validation",
                     status_code = status_code,
@@ -70,7 +70,7 @@ impl ApiError {
                     "Request failed"
                 );
             }
-            ApiError::Storage(e) => match e {
+            Self::Storage(e) => match e {
                 StorageError::NotFound(id) => {
                     warn!(
                         error_type = "storage_not_found",
@@ -96,7 +96,7 @@ impl ApiError {
                     );
                 }
             },
-            ApiError::Wol(e) => match e {
+            Self::Wol(e) => match e {
                 WolError::InvalidMac(mac) => {
                     warn!(
                         error_type = "wol_invalid_mac",
@@ -114,7 +114,7 @@ impl ApiError {
                     );
                 }
             },
-            ApiError::Arp(e) => match e {
+            Self::Arp(e) => match e {
                 ArpError::InvalidIp(err) => {
                     warn!(
                         error_type = "arp_invalid_ip",
