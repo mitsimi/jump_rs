@@ -23,7 +23,9 @@ pub struct Device {
     pub port: u16,
     #[schema(example = "My main computer")]
     pub description: Option<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    #[schema(value_type = String)]
+    #[serde(with = "time::serde::rfc3339")]
+    pub created_at: time::OffsetDateTime,
 }
 
 impl Device {
@@ -43,7 +45,7 @@ impl Device {
             ip_address,
             port,
             description,
-            created_at: chrono::Utc::now(),
+            created_at: time::OffsetDateTime::now_utc(),
         })
     }
 }

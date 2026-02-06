@@ -162,7 +162,7 @@ mod tests {
             ip_address: Some("192.168.1.100".to_string()),
             port: 9,
             description: Some("Test device".to_string()),
-            created_at: chrono::Utc::now(),
+            created_at: time::OffsetDateTime::now_utc(),
         }
     }
 
@@ -402,7 +402,7 @@ mod tests {
             ip_address: Some("10.0.0.50".to_string()),
             port: 7,
             description: Some("Production server".to_string()),
-            created_at: chrono::Utc::now(),
+            created_at: time::OffsetDateTime::now_utc(),
         };
 
         // Save
