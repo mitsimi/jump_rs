@@ -80,9 +80,7 @@ export function ImportExportModal({
         },
         onError: (error) => {
           showToast(
-            error instanceof Error
-              ? error.message
-              : "Failed to import devices",
+            error instanceof Error ? error.message : "Failed to import devices",
             "error",
           );
         },
@@ -111,9 +109,7 @@ export function ImportExportModal({
         },
         onError: (error) => {
           showToast(
-            error instanceof Error
-              ? error.message
-              : "Failed to import devices",
+            error instanceof Error ? error.message : "Failed to import devices",
             "error",
           );
         },

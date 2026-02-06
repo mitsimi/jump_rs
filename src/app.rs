@@ -1,5 +1,4 @@
-use axum::Extension;
-use axum::{Router, http::Request};
+use axum::{Router, http::Request, middleware};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
@@ -8,9 +7,32 @@ use tower_http::{LatencyUnit, request_id::RequestId};
 use tracing::Span;
 
 use crate::api;
+use crate::auth::{AuthState, auth_middleware};
+use crate::config::AppConfig;
 use crate::storage::SharedStorage;
 
-pub fn build_app(storage: SharedStorage) -> Router {
+#[derive(Clone)]
+pub struct AppState {
+    pub storage: SharedStorage,
+    pub auth_state: AuthState,
+    pub config: &'static AppConfig,
+}
+
+impl AppState {
+    pub const fn new(
+        storage: SharedStorage,
+        auth_state: AuthState,
+        config: &'static AppConfig,
+    ) -> Self {
+        Self {
+            storage,
+            auth_state,
+            config,
+        }
+    }
+}
+
+pub fn build_app(state: AppState) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -19,7 +41,11 @@ pub fn build_app(storage: SharedStorage) -> Router {
     Router::new()
         .fallback_service(ServeDir::new("static/dist"))
         .merge(api::router())
-        .layer(Extension(storage))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ))
+        .with_state(state)
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()
@@ -47,6 +73,6 @@ pub fn build_app(storage: SharedStorage) -> Router {
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
 }
 
-pub fn build_service(storage: SharedStorage) -> Router {
-    build_app(storage)
+pub fn build_service(state: AppState) -> Router {
+    build_app(state)
 }

@@ -1,6 +1,7 @@
 mod api;
 mod app;
 mod arp;
+mod auth;
 mod cli;
 mod config;
 mod error;
@@ -9,13 +10,14 @@ mod storage;
 mod telemetry;
 mod wol;
 
-use crate::app::build_service;
+use crate::app::{AppState, build_service};
+use crate::auth::{AuthState, SessionManager, UserStore};
 use crate::cli::Cli;
 use crate::storage::SharedStorage;
 use clap::Parser;
 use std::net::SocketAddr;
 use tokio::signal;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[tokio::main]
 async fn main() {
@@ -51,7 +53,26 @@ async fn main() {
         }
     };
 
-    let app = build_service(storage);
+    let auth_state = {
+        let user_store = UserStore::from_config(&config.auth.users);
+        let session_manager = SessionManager::new(config.auth.session_timeout);
+
+        if config.auth.disabled {
+            info!("Authentication disabled");
+        } else if user_store.is_empty() {
+            warn!("Authentication enabled but no users configured");
+        } else {
+            info!(
+                user_count = user_store.user_count(),
+                "Authentication enabled"
+            );
+        }
+
+        AuthState::new(user_store, session_manager)
+    };
+
+    let app_state = AppState::new(storage, auth_state, config);
+    let app = build_service(app_state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

@@ -3,10 +3,22 @@ import { Header } from "./components/Header";
 import { DeviceGrid } from "./components/DeviceGrid";
 import { DeviceModal } from "./components/DeviceModal";
 import { ImportExportModal } from "./components/ImportExportModal";
+import { LoginScreen } from "./components/LoginScreen";
 import { ToastProvider } from "./components/Toast";
+import { AuthProvider } from "./context/AuthContext";
+import { useAuth } from "./hooks/useAuth";
 import type { Device } from "./types/device";
 
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-spinner" />
+    </div>
+  );
+}
+
 function AppContent() {
+  const { isAuthenticated, isLoading, isAuthRequired } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
@@ -25,6 +37,14 @@ function AppContent() {
     setIsModalOpen(false);
     setEditingDevice(null);
   };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (isAuthRequired && !isAuthenticated) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="container">
@@ -46,8 +66,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AppContent />
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
+    </AuthProvider>
   );
 }

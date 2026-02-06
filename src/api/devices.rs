@@ -1,11 +1,11 @@
 use crate::api::ApiResult;
-use crate::config;
+use crate::app::AppState;
 use crate::error::ErrorResponse;
 use crate::models::{Device, validate_mac_address};
-use crate::storage::{SharedStorage, StorageError};
+use crate::storage::StorageError;
 use axum::{
     Router,
-    extract::{Extension, Json, Path},
+    extract::{Json, Path, State},
     http::StatusCode,
     routing::{get, post, put},
 };
@@ -38,7 +38,7 @@ use utoipa::{OpenApi, ToSchema};
 )]
 pub struct DeviceApiDoc;
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/devices", get(get_devices).post(create_device))
         .route("/api/devices/export", get(export_devices))
@@ -62,10 +62,8 @@ pub fn router() -> Router {
     )
 )]
 #[instrument(skip_all)]
-pub async fn get_devices(
-    Extension(storage): Extension<SharedStorage>,
-) -> ApiResult<Json<Vec<Device>>> {
-    let devices = storage.get_all();
+pub async fn get_devices(State(state): State<AppState>) -> ApiResult<Json<Vec<Device>>> {
+    let devices = state.storage.get_all();
     info!(count = devices.len(), "Devices retrieved");
     Ok(Json(devices))
 }
@@ -97,10 +95,8 @@ pub struct ExportResponse {
     )
 )]
 #[instrument(skip_all)]
-pub async fn export_devices(
-    Extension(storage): Extension<SharedStorage>,
-) -> ApiResult<Json<Vec<ExportResponse>>> {
-    let devices = storage.get_all();
+pub async fn export_devices(State(state): State<AppState>) -> ApiResult<Json<Vec<ExportResponse>>> {
+    let devices = state.storage.get_all();
     let count = devices.len();
     let result: Vec<ExportResponse> = devices
         .into_iter()
@@ -146,7 +142,7 @@ pub struct ImportRequest {
 )]
 #[instrument(skip_all, fields(count = req.len()))]
 pub async fn import_devices(
-    Extension(storage): Extension<SharedStorage>,
+    State(state): State<AppState>,
     Json(req): Json<Vec<ImportRequest>>,
 ) -> ApiResult<(StatusCode, Json<Vec<Device>>)> {
     let mut devices = Vec::new();
@@ -155,14 +151,12 @@ pub async fn import_devices(
             device.name,
             device.mac_address,
             device.ip_address,
-            device
-                .port
-                .unwrap_or_else(|| config::get().wol.default_port),
+            device.port.unwrap_or(state.config.wol.default_port),
             device.description,
         )?;
         devices.push(device);
     }
-    storage.add_all(devices.clone())?;
+    state.storage.add_all(devices.clone())?;
     info!(count = devices.len(), "Devices imported");
     Ok((StatusCode::CREATED, Json(devices)))
 }
@@ -197,18 +191,18 @@ pub struct CreateDeviceRequest {
 )]
 #[instrument(skip_all, fields(device_name = %req.name))]
 pub async fn create_device(
-    Extension(storage): Extension<SharedStorage>,
+    State(state): State<AppState>,
     Json(req): Json<CreateDeviceRequest>,
 ) -> ApiResult<(StatusCode, Json<Device>)> {
     let device = Device::new(
         req.name,
         req.mac_address,
         req.ip_address,
-        req.port.unwrap_or_else(|| config::get().wol.default_port),
+        req.port.unwrap_or(state.config.wol.default_port),
         req.description,
     )?;
 
-    storage.add(device.clone())?;
+    state.storage.add(device.clone())?;
 
     info!(device_id = %device.id, "Device created");
     Ok((StatusCode::CREATED, Json(device)))
@@ -248,11 +242,12 @@ pub struct UpdateDeviceRequest {
 )]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn update_device(
-    Extension(storage): Extension<SharedStorage>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
     Json(req): Json<UpdateDeviceRequest>,
 ) -> ApiResult<Json<Device>> {
-    let existing = storage
+    let existing = state
+        .storage
         .get(&id)
         .ok_or_else(|| StorageError::NotFound(id.clone()))?;
 
@@ -274,7 +269,7 @@ pub async fn update_device(
         created_at: existing.created_at,
     };
 
-    storage.update(&id, updated.clone())?;
+    state.storage.update(&id, updated.clone())?;
     info!("Device updated");
     Ok(Json(updated))
 }
@@ -297,10 +292,10 @@ pub async fn update_device(
 )]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn delete_device(
-    Extension(storage): Extension<SharedStorage>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
-    storage.remove(&id)?;
+    state.storage.remove(&id)?;
     info!("Device deleted");
     Ok(StatusCode::NO_CONTENT)
 }

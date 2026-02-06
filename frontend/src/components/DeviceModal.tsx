@@ -87,9 +87,7 @@ export function DeviceModal({
         },
         onError: (error) => {
           const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Failed to create device";
+            error instanceof Error ? error.message : "Failed to create device";
           toast.showToast(errorMessage, "error");
         },
       });

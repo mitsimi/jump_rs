@@ -14,15 +14,21 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub storage: StorageConfig,
     pub wol: WolConfig,
+    pub auth: AuthConfig,
     #[cfg(feature = "otlp")]
     pub otel: OtelConfig,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct ServerConfig {
     pub port: u16,
     pub log_level: LogLevel,
     pub log_format: LogFormat,
+    /// Allow cookies over insecure HTTP (useful for local development).
+    pub allow_insecure_cookies: bool,
+    /// Explicit origins allowed for auth actions.
+    pub allow_origins: Vec<String>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -58,17 +64,43 @@ pub enum LogFormat {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct StorageConfig {
     pub file_path: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct WolConfig {
     pub default_port: u16,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct AuthConfig {
+    /// Whether authentication is disabled.
+    pub disabled: bool,
+    /// String of comma-separated usernames and passwords.
+    /// Format: username:password,username:password,...
+    /// Passwords are hashed using bcrypt.
+    pub users: String,
+    /// Session timeout in seconds.
+    pub session_timeout: u64,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self {
+            disabled: false,
+            users: String::new(),
+            session_timeout: 86400,
+        }
+    }
+}
+
 #[cfg(feature = "otlp")]
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct OtelConfig {
     /// OTLP endpoint URL (e.g., <http://localhost:4317>). If empty, OTEL is disabled.
     pub endpoint: Option<String>,
@@ -82,6 +114,8 @@ impl Default for ServerConfig {
             port: 3000,
             log_level: LogLevel::default(),
             log_format: LogFormat::default(),
+            allow_insecure_cookies: false,
+            allow_origins: Vec::new(),
         }
     }
 }
@@ -126,17 +160,7 @@ pub fn get() -> &'static AppConfig {
 fn load() -> Result<AppConfig, ConfigError> {
     let config_path = env::var(CONFIG_PATH_ENV).unwrap_or_else(|_| DEFAULT_CONFIG_FILE.to_string());
 
-    let builder = Config::builder()
-        .set_default("server.port", 3000)?
-        .set_default("server.log_level", "info")?
-        .set_default("server.log_format", "compact")?
-        .set_default("storage.file_path", "devices.json")?
-        .set_default("wol.default_port", 9)?;
-
-    #[cfg(feature = "otlp")]
-    let builder = builder.set_default("otel.service_name", "jump_rs")?;
-
-    let config = builder
+    let config = Config::builder()
         .add_source(File::with_name(&config_path).required(false))
         .add_source(
             Environment::with_prefix(ENV_PREFIX)

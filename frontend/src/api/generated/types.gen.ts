@@ -18,6 +18,13 @@ export type ArpLookupResponse = {
     mac: string;
 };
 
+export type AuthStatusResponse = {
+    /**
+     * Whether authentication is required (true = auth enabled, false = auth disabled).
+     */
+    auth_required: boolean;
+};
+
 export type CreateDeviceRequest = {
     description?: string | null;
     ip_address?: string | null;
@@ -66,6 +73,20 @@ export type ImportRequest = {
     port?: number | null;
 };
 
+export type LoginRequest = {
+    password: string;
+    username: string;
+};
+
+export type LoginResponse = {
+    status: string;
+    username: string;
+};
+
+export type MeResponse = {
+    username: string;
+};
+
 export type UpdateDeviceRequest = {
     description?: string | null;
     ip_address?: string | null;
@@ -109,6 +130,86 @@ export type ArpLookupResponses = {
 };
 
 export type ArpLookupResponse2 = ArpLookupResponses[keyof ArpLookupResponses];
+
+export type LoginData = {
+    body: LoginRequest;
+    path?: never;
+    query?: never;
+    url: '/api/auth/login';
+};
+
+export type LoginErrors = {
+    /**
+     * Invalid credentials
+     */
+    401: ErrorResponse;
+};
+
+export type LoginError = LoginErrors[keyof LoginErrors];
+
+export type LoginResponses = {
+    /**
+     * Login successful
+     */
+    200: LoginResponse;
+};
+
+export type LoginResponse2 = LoginResponses[keyof LoginResponses];
+
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/logout';
+};
+
+export type LogoutResponses = {
+    /**
+     * Logout successful
+     */
+    200: unknown;
+};
+
+export type MeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/me';
+};
+
+export type MeErrors = {
+    /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+};
+
+export type MeError = MeErrors[keyof MeErrors];
+
+export type MeResponses = {
+    /**
+     * Current user info
+     */
+    200: MeResponse;
+};
+
+export type MeResponse2 = MeResponses[keyof MeResponses];
+
+export type AuthStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/auth/status';
+};
+
+export type AuthStatusResponses = {
+    /**
+     * Auth status
+     */
+    200: AuthStatusResponse;
+};
+
+export type AuthStatusResponse2 = AuthStatusResponses[keyof AuthStatusResponses];
 
 export type GetDevicesData = {
     body?: never;

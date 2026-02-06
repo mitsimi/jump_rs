@@ -1,8 +1,8 @@
-use axum::{Json, Router, routing::post};
+use axum::{Json, Router, extract::State, routing::post};
 use tracing::{info, instrument};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::{api::ApiResult, arp, error::ErrorResponse};
+use crate::{api::ApiResult, app::AppState, arp, error::ErrorResponse};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -22,7 +22,7 @@ use crate::{api::ApiResult, arp, error::ErrorResponse};
 )]
 pub struct NetworkApiDoc;
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new().route("/api/arp-lookup", post(arp_lookup))
 }
 
@@ -56,7 +56,10 @@ pub struct ArpLookupResponse {
     )
 )]
 #[instrument(skip_all, fields(target_ip = %req.ip))]
-pub async fn arp_lookup(Json(req): Json<ArpLookupRequest>) -> ApiResult<Json<ArpLookupResponse>> {
+pub async fn arp_lookup(
+    State(_state): State<AppState>,
+    Json(req): Json<ArpLookupRequest>,
+) -> ApiResult<Json<ArpLookupResponse>> {
     let mac = arp::lookup_mac(&req.ip)?;
     info!(mac = %mac, "ARP lookup successful");
     Ok(Json(ArpLookupResponse { mac }))

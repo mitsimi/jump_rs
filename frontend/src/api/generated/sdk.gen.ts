@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ArpLookupData, ArpLookupErrors, ArpLookupResponses, CreateDeviceData, CreateDeviceErrors, CreateDeviceResponses, DeleteDeviceData, DeleteDeviceErrors, DeleteDeviceResponses, ExportDevicesData, ExportDevicesErrors, ExportDevicesResponses, GetDevicesData, GetDevicesErrors, GetDevicesResponses, ImportDevicesData, ImportDevicesErrors, ImportDevicesResponses, UpdateDeviceData, UpdateDeviceErrors, UpdateDeviceResponses, WakeDeviceData, WakeDeviceErrors, WakeDeviceResponses } from './types.gen';
+import type { ArpLookupData, ArpLookupErrors, ArpLookupResponses, AuthStatusData, AuthStatusResponses, CreateDeviceData, CreateDeviceErrors, CreateDeviceResponses, DeleteDeviceData, DeleteDeviceErrors, DeleteDeviceResponses, ExportDevicesData, ExportDevicesErrors, ExportDevicesResponses, GetDevicesData, GetDevicesErrors, GetDevicesResponses, ImportDevicesData, ImportDevicesErrors, ImportDevicesResponses, LoginData, LoginErrors, LoginResponses, LogoutData, LogoutResponses, MeData, MeErrors, MeResponses, UpdateDeviceData, UpdateDeviceErrors, UpdateDeviceResponses, WakeDeviceData, WakeDeviceErrors, WakeDeviceResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -31,6 +31,41 @@ export const arpLookup = <ThrowOnError extends boolean = false>(options: Options
         ...options.headers
     }
 });
+
+/**
+ * Login with username and password
+ *
+ * Authenticates a user and returns a session cookie.
+ */
+export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>) => (options.client ?? client).post<LoginResponses, LoginErrors, ThrowOnError>({
+    url: '/api/auth/login',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Logout and invalidate session
+ *
+ * Invalidates the current session and clears the session cookie.
+ */
+export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>) => (options?.client ?? client).post<LogoutResponses, unknown, ThrowOnError>({ url: '/api/auth/logout', ...options });
+
+/**
+ * Get current authenticated user
+ *
+ * Returns information about the currently authenticated user.
+ */
+export const me = <ThrowOnError extends boolean = false>(options?: Options<MeData, ThrowOnError>) => (options?.client ?? client).get<MeResponses, MeErrors, ThrowOnError>({ url: '/api/auth/me', ...options });
+
+/**
+ * Get authentication status
+ *
+ * Returns whether authentication is required for this instance.
+ */
+export const authStatus = <ThrowOnError extends boolean = false>(options?: Options<AuthStatusData, ThrowOnError>) => (options?.client ?? client).get<AuthStatusResponses, unknown, ThrowOnError>({ url: '/api/auth/status', ...options });
 
 /**
  * List all devices

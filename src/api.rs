@@ -1,7 +1,9 @@
 mod arp;
+pub mod auth;
 mod devices;
 mod wol;
 
+use crate::app::AppState;
 use crate::error::ApiError;
 use axum::Router;
 use utoipa::OpenApi;
@@ -22,6 +24,7 @@ pub struct ApiDoc;
 
 pub fn openapi() -> utoipa::openapi::OpenApi {
     let mut doc = ApiDoc::openapi();
+    doc.merge(auth::AuthApiDoc::openapi());
     doc.merge(devices::DeviceApiDoc::openapi());
     doc.merge(wol::WolApiDoc::openapi());
     doc.merge(arp::NetworkApiDoc::openapi());
@@ -29,9 +32,10 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
 }
 
 /// Creates and configures the API router with all API routes
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new()
         .merge(SwaggerUi::new("/api/swagger").url("/api/docs/openapi.json", openapi()))
+        .merge(auth::router())
         .merge(devices::router())
         .merge(wol::router())
         .merge(arp::router())

@@ -1,8 +1,13 @@
-use axum::{Extension, Router, extract::Path, http::StatusCode, routing::post};
+use axum::{
+    Router,
+    extract::{Path, State},
+    http::StatusCode,
+    routing::post,
+};
 use tracing::{info, instrument};
 use utoipa::OpenApi;
 
-use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage, wol};
+use crate::{api::ApiResult, app::AppState, error::ErrorResponse, wol};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -20,7 +25,7 @@ use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage, wol};
 )]
 pub struct WolApiDoc;
 
-pub fn router() -> Router {
+pub fn router() -> Router<AppState> {
     Router::new().route("/api/devices/{id}/wake", post(wake_device))
 }
 
@@ -42,10 +47,11 @@ pub fn router() -> Router {
 )]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn wake_device(
-    Extension(storage): Extension<SharedStorage>,
+    State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
-    let device = storage
+    let device = state
+        .storage
         .get(&id)
         .ok_or(crate::storage::StorageError::NotFound(id))?;
 
