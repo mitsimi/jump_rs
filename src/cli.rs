@@ -1,6 +1,5 @@
 use crate::api;
 use clap::Parser;
-use utoipa::OpenApi;
 
 #[derive(Parser)]
 #[command(name = "jump.rs", version, about = "Wake-on-LAN web server")]
@@ -34,11 +33,11 @@ impl Cli {
     }
 
     fn emit_openapi_spec() {
-        println!("{}", api::ApiDoc::openapi().to_pretty_json().unwrap());
+        println!("{}", api::openapi().to_pretty_json().unwrap());
     }
 
     fn generate_openapi_file() {
-        let spec = api::ApiDoc::openapi();
+        let spec = api::openapi();
         let json = serde_json::to_string_pretty(&spec).unwrap();
 
         // Determine output directory based on current working directory

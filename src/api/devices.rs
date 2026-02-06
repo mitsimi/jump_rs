@@ -3,10 +3,51 @@ use crate::config;
 use crate::error::ErrorResponse;
 use crate::models::{Device, validate_mac_address};
 use crate::storage::{SharedStorage, StorageError};
-use axum::extract::{Json, Path, State};
-use axum::http::StatusCode;
+use axum::{
+    Router,
+    extract::{Extension, Json, Path},
+    http::StatusCode,
+    routing::{get, post, put},
+};
 use tracing::{info, instrument};
-use utoipa::ToSchema;
+use utoipa::{OpenApi, ToSchema};
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        get_devices,
+        export_devices,
+        import_devices,
+        create_device,
+        update_device,
+        delete_device,
+    ),
+    components(
+        schemas(
+            crate::models::Device,
+            crate::error::ErrorResponse,
+            ExportResponse,
+            ImportRequest,
+            CreateDeviceRequest,
+            UpdateDeviceRequest,
+        )
+    ),
+    tags(
+        (name = "devices", description = "Device management endpoints")
+    )
+)]
+pub struct DeviceApiDoc;
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/api/devices", get(get_devices).post(create_device))
+        .route("/api/devices/export", get(export_devices))
+        .route("/api/devices/import", post(import_devices))
+        .route(
+            "/api/devices/{id}",
+            put(update_device).delete(delete_device),
+        )
+}
 
 #[utoipa::path(
     get,
@@ -21,7 +62,9 @@ use utoipa::ToSchema;
     )
 )]
 #[instrument(skip_all)]
-pub async fn get_devices(State(storage): State<SharedStorage>) -> ApiResult<Json<Vec<Device>>> {
+pub async fn get_devices(
+    Extension(storage): Extension<SharedStorage>,
+) -> ApiResult<Json<Vec<Device>>> {
     let devices = storage.get_all();
     info!(count = devices.len(), "Devices retrieved");
     Ok(Json(devices))
@@ -55,7 +98,7 @@ pub struct ExportResponse {
 )]
 #[instrument(skip_all)]
 pub async fn export_devices(
-    State(storage): State<SharedStorage>,
+    Extension(storage): Extension<SharedStorage>,
 ) -> ApiResult<Json<Vec<ExportResponse>>> {
     let devices = storage.get_all();
     let count = devices.len();
@@ -103,7 +146,7 @@ pub struct ImportRequest {
 )]
 #[instrument(skip_all, fields(count = req.len()))]
 pub async fn import_devices(
-    State(storage): State<SharedStorage>,
+    Extension(storage): Extension<SharedStorage>,
     Json(req): Json<Vec<ImportRequest>>,
 ) -> ApiResult<(StatusCode, Json<Vec<Device>>)> {
     let mut devices = Vec::new();
@@ -154,7 +197,7 @@ pub struct CreateDeviceRequest {
 )]
 #[instrument(skip_all, fields(device_name = %req.name))]
 pub async fn create_device(
-    State(storage): State<SharedStorage>,
+    Extension(storage): Extension<SharedStorage>,
     Json(req): Json<CreateDeviceRequest>,
 ) -> ApiResult<(StatusCode, Json<Device>)> {
     let device = Device::new(
@@ -205,7 +248,7 @@ pub struct UpdateDeviceRequest {
 )]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn update_device(
-    State(storage): State<SharedStorage>,
+    Extension(storage): Extension<SharedStorage>,
     Path(id): Path<String>,
     Json(req): Json<UpdateDeviceRequest>,
 ) -> ApiResult<Json<Device>> {
@@ -254,7 +297,7 @@ pub async fn update_device(
 )]
 #[instrument(skip_all, fields(device_id = %id))]
 pub async fn delete_device(
-    State(storage): State<SharedStorage>,
+    Extension(storage): Extension<SharedStorage>,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
     storage.remove(&id)?;

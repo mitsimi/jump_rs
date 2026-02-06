@@ -1,8 +1,30 @@
-use axum::Json;
+use axum::{Json, Router, routing::post};
 use tracing::{info, instrument};
-use utoipa::ToSchema;
+use utoipa::{OpenApi, ToSchema};
 
 use crate::{api::ApiResult, arp, error::ErrorResponse};
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        arp_lookup,
+    ),
+    components(
+        schemas(
+            ArpLookupRequest,
+            ArpLookupResponse,
+            crate::error::ErrorResponse,
+        )
+    ),
+    tags(
+        (name = "network", description = "Network utility endpoints")
+    )
+)]
+pub struct NetworkApiDoc;
+
+pub fn router() -> Router {
+    Router::new().route("/api/arp-lookup", post(arp_lookup))
+}
 
 #[derive(Debug, serde::Deserialize, ToSchema)]
 pub struct ArpLookupRequest {
