@@ -10,6 +10,7 @@ const CONFIG_PATH_ENV: &str = "JUMPERS_CONFIG";
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(default)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub storage: StorageConfig,
@@ -25,10 +26,16 @@ pub struct ServerConfig {
     pub port: u16,
     pub log_level: LogLevel,
     pub log_format: LogFormat,
-    /// Allow cookies over insecure HTTP (useful for local development).
-    pub allow_insecure_cookies: bool,
-    /// Explicit origins allowed for auth actions.
-    pub allow_origins: Vec<String>,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: 3000,
+            log_level: LogLevel::default(),
+            log_format: LogFormat::default(),
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -69,10 +76,24 @@ pub struct StorageConfig {
     pub file_path: String,
 }
 
+impl Default for StorageConfig {
+    fn default() -> Self {
+        Self {
+            file_path: "devices.json".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(default)]
 pub struct WolConfig {
     pub default_port: u16,
+}
+
+impl Default for WolConfig {
+    fn default() -> Self {
+        Self { default_port: 9 }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,14 +107,20 @@ pub struct AuthConfig {
     pub users: String,
     /// Session timeout in seconds.
     pub session_timeout: u64,
+    /// Allow cookies over insecure HTTP (useful for local development).
+    pub allow_insecure_cookies: bool,
+    /// Explicit origins allowed for auth actions.
+    pub allow_origins: Vec<String>,
 }
 
 impl Default for AuthConfig {
     fn default() -> Self {
         Self {
-            disabled: false,
+            disabled: true,
             users: String::new(),
             session_timeout: 86400,
+            allow_insecure_cookies: false,
+            allow_origins: Vec::new(),
         }
     }
 }
@@ -106,32 +133,6 @@ pub struct OtelConfig {
     pub endpoint: Option<String>,
     /// Service name for traces. Defaults to `jump_rs`.
     pub service_name: String,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            port: 3000,
-            log_level: LogLevel::default(),
-            log_format: LogFormat::default(),
-            allow_insecure_cookies: false,
-            allow_origins: Vec::new(),
-        }
-    }
-}
-
-impl Default for StorageConfig {
-    fn default() -> Self {
-        Self {
-            file_path: "devices.json".to_string(),
-        }
-    }
-}
-
-impl Default for WolConfig {
-    fn default() -> Self {
-        Self { default_port: 9 }
-    }
 }
 
 #[cfg(feature = "otlp")]

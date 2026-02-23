@@ -1,17 +1,6 @@
 # Jump.rs Configuration
-# Copy this file to config.toml to use, or set environment variables with JUMPERS_ prefix.
-# Environment variables override config file values.
-#
-# Examples:
-#   JUMPERS_SERVER_PORT=8080
-#   JUMPERS_SERVER_LOG_LEVEL=debug
-#   JUMPERS_SERVER_LOG_FORMAT=json
-#   JUMPERS_STORAGE_FILE_PATH=/data/devices.json
-#   JUMPERS_WOL_DEFAULT_PORT=7
-#   JUMPERS_OTEL_ENDPOINT=http://localhost:4317
-#   JUMPERS_OTEL_SERVICE_NAME=my-jump-instance
-#
-# To use a custom config file path, set JUMPERS_CONFIG=/path/to/config.toml
+# Copy this file to config.toml. Environment variables with the JUMPERS_ prefix
+# override file values. Use JUMPERS_CONFIG to point at a custom path.
 
 [server]
 # HTTP port to listen on
@@ -22,6 +11,27 @@ log_level = "info"
 
 # Log output format: "compact", "json", or "pretty"
 log_format = "compact"
+
+[auth]
+# Disable authentication entirely (recommended until users are configured).
+disabled = true
+
+# User credentials: username:bcrypt_hash,username:bcrypt_hash
+# Bcrypt hashes start with "$2" (e.g., "$2b$12$...")
+# Docker Compose requires escaping "$" as "$$" (e.g., "$$2b$$12$$...")
+# Generate: htpasswd -bnBC 12 "" password | tr -d ':\n'
+users = ""
+
+# Session timeout in seconds
+session_timeout = 86400
+
+# Allow cookies over insecure HTTP (useful for local development)
+allow_insecure_cookies = false
+
+# Explicit origins allowed for auth actions
+# Supports "*" and single-wildcard patterns like "http://localhost:*"
+# Example: ["http://localhost:5173", "http://localhost:*"]
+allow_origins = []
 
 [storage]
 # Path to the JSON file storing device data
@@ -34,7 +44,7 @@ default_port = 9
 [otel]
 # OpenTelemetry OTLP endpoint (requires "otlp" feature)
 # If not set, OTEL tracing is disabled.
-# endpoint = "http://localhost:4317"
+endpoint = "http://localhost:4317"
 
 # Service name for traces
 service_name = "jump_rs"

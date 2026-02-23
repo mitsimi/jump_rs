@@ -126,7 +126,7 @@ pub async fn login(
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .secure(!state.config.server.allow_insecure_cookies)
+        .secure(!state.config.auth.allow_insecure_cookies)
         .max_age(Duration::seconds(timeout_seconds.cast_signed()))
         .build();
 
@@ -188,7 +188,7 @@ pub async fn logout(
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .secure(!state.config.server.allow_insecure_cookies)
+        .secure(!state.config.auth.allow_insecure_cookies)
         .max_age(Duration::ZERO)
         .build();
 
@@ -278,13 +278,13 @@ fn is_same_origin(headers: &axum::http::HeaderMap, state: &AppState) -> bool {
 }
 
 fn is_allowed_origin(origin: &str, state: &AppState) -> bool {
-    if state.config.server.allow_origins.is_empty() {
+    if state.config.auth.allow_origins.is_empty() {
         return false;
     }
 
     state
         .config
-        .server
+        .auth
         .allow_origins
         .iter()
         .any(|allowed| origin_matches(allowed, origin))
