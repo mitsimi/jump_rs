@@ -1,13 +1,14 @@
-use axum::{Router, http::Request, middleware};
-use tower_http::cors::{Any, CorsLayer};
+use axum::http::HeaderValue;
+use axum::{http::Request, middleware, Router};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
-use tower_http::{LatencyUnit, request_id::RequestId};
+use tower_http::{request_id::RequestId, LatencyUnit};
 use tracing::Span;
 
 use crate::api;
-use crate::auth::{AuthState, auth_middleware};
+use crate::auth::{auth_middleware, AuthState};
 use crate::config::AppConfig;
 use crate::storage::SharedStorage;
 
@@ -33,10 +34,31 @@ impl AppState {
 }
 
 pub fn build_app(state: AppState) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+    let cors = if state.config.auth.disabled {
+        CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
+    } else {
+        let allowed_origins: Vec<HeaderValue> = state
+            .config
+            .auth
+            .allow_origins
+            .iter()
+            .filter_map(|origin| origin.parse().ok())
+            .collect();
+
+        let cors = CorsLayer::new()
+            .allow_methods(Any)
+            .allow_headers(Any)
+            .allow_credentials(true);
+
+        if allowed_origins.is_empty() {
+            cors
+        } else {
+            cors.allow_origin(AllowOrigin::list(allowed_origins))
+        }
+    };
 
     Router::new()
         .fallback_service(ServeDir::new("static/dist"))
