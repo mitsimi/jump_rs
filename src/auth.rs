@@ -69,7 +69,11 @@ impl UserStore {
     pub fn verify_password(&self, username: &str, password: &str) -> bool {
         self.users.get(username).map_or_else(
             || {
-                bcrypt::verify(password, "$2b$12$invalidhashtopreventtiming").ok();
+                bcrypt::verify(
+                    password,
+                    "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4beWo3z6eHMy3yOS",
+                )
+                .ok();
                 false
             },
             |hash| bcrypt::verify(password, hash).unwrap_or(false),
