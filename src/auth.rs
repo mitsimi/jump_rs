@@ -6,6 +6,7 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use axum_extra::extract::cookie::CookieJar;
 use base64::prelude::*;
 use parking_lot::RwLock;
 use serde::Serialize;
@@ -186,22 +187,6 @@ fn is_public_path(path: &str) -> bool {
         || path == "/api/docs/openapi.json"
 }
 
-fn extract_session_cookie(request: &Request<Body>) -> Option<String> {
-    let cookie_header = request.headers().get(header::COOKIE)?;
-    let cookie_str = cookie_header.to_str().ok()?;
-
-    for cookie in cookie_str.split(';') {
-        let cookie = cookie.trim();
-        if let Some(value) = cookie.strip_prefix(SESSION_COOKIE_NAME) {
-            let value = value.trim_start_matches('=');
-            if !value.is_empty() {
-                return Some(value.to_string());
-            }
-        }
-    }
-    None
-}
-
 fn extract_basic_auth(request: &Request<Body>) -> Option<(String, String)> {
     let auth_header = request.headers().get(header::AUTHORIZATION)?;
     let auth_str = auth_header.to_str().ok()?;
@@ -216,6 +201,7 @@ fn extract_basic_auth(request: &Request<Body>) -> Option<(String, String)> {
 #[instrument(skip_all, fields(path = %request.uri().path()))]
 pub async fn auth_middleware(
     State(state): State<AppState>,
+    jar: CookieJar,
     mut request: Request<Body>,
     next: Next,
 ) -> Response {
@@ -237,16 +223,18 @@ pub async fn auth_middleware(
         return next.run(request).await;
     }
 
-    if let Some(session_id) = extract_session_cookie(&request)
-        && let Some(username) = state
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        let session_id = session_cookie.value();
+        if let Some(username) = state
             .auth_state
             .session_manager
-            .validate_session(&session_id)
-    {
-        request
-            .extensions_mut()
-            .insert(AuthenticatedUser { username });
-        return next.run(request).await;
+            .validate_session(session_id)
+        {
+            request
+                .extensions_mut()
+                .insert(AuthenticatedUser { username });
+            return next.run(request).await;
+        }
     }
 
     if let Some((username, password)) = extract_basic_auth(&request)

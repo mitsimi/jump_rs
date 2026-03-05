@@ -2,11 +2,11 @@ use axum::http::Uri;
 use axum::{
     Router,
     extract::{Json, State},
-    http::{StatusCode, header::SET_COOKIE},
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
 };
-use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 use tracing::{info, instrument, warn};
@@ -79,6 +79,7 @@ pub struct AuthStatusResponse {
 #[instrument(skip_all, fields(username = %payload.username))]
 pub async fn login(
     State(state): State<AppState>,
+    jar: CookieJar,
     headers: axum::http::HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> axum::response::Response {
@@ -105,9 +106,17 @@ pub async fn login(
         .verify_password(&payload.username, &payload.password)
     {
         warn!("Failed login attempt");
+        let removal_cookie = Cookie::build((SESSION_COOKIE_NAME, ""))
+            .path("/")
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .secure(!state.config.auth.allow_insecure_cookies)
+            .max_age(Duration::ZERO)
+            .build();
+
         return (
             StatusCode::UNAUTHORIZED,
-            [(SET_COOKIE, "")],
+            jar.remove(removal_cookie),
             Json(serde_json::json!({
                 "status": "error",
                 "message": "Invalid username or password"
@@ -134,7 +143,7 @@ pub async fn login(
 
     (
         StatusCode::OK,
-        [(SET_COOKIE, cookie.to_string())],
+        jar.add(cookie),
         Json(serde_json::json!({
             "status": "success",
             "username": payload.username
@@ -158,6 +167,7 @@ pub async fn login(
 pub async fn logout(
     headers: axum::http::HeaderMap,
     State(state): State<AppState>,
+    jar: CookieJar,
 ) -> axum::response::Response {
     if !is_same_origin(&headers, &state) {
         warn!(
@@ -176,15 +186,16 @@ pub async fn logout(
             .into_response();
     }
 
-    if let Some(session_id) = extract_session_id_from_headers(&headers) {
+    if let Some(session_cookie) = jar.get(SESSION_COOKIE_NAME) {
+        let session_id = session_cookie.value();
         state
             .auth_state
             .session_manager
-            .invalidate_session(&session_id);
+            .invalidate_session(session_id);
         info!("User logged out");
     }
 
-    let cookie = Cookie::build((SESSION_COOKIE_NAME, ""))
+    let removal_cookie = Cookie::build((SESSION_COOKIE_NAME, ""))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
@@ -194,7 +205,7 @@ pub async fn logout(
 
     (
         StatusCode::OK,
-        [(SET_COOKIE, cookie.to_string())],
+        jar.remove(removal_cookie),
         Json(serde_json::json!({
             "status": "success",
             "message": "Logged out successfully"
@@ -242,22 +253,6 @@ pub async fn auth_status(State(state): State<AppState>) -> Json<AuthStatusRespon
     Json(AuthStatusResponse {
         auth_required: !state.config.auth.disabled,
     })
-}
-
-fn extract_session_id_from_headers(headers: &axum::http::HeaderMap) -> Option<String> {
-    let cookie_header = headers.get(axum::http::header::COOKIE)?;
-    let cookie_str = cookie_header.to_str().ok()?;
-
-    for cookie in cookie_str.split(';') {
-        let cookie = cookie.trim();
-        if let Some(value) = cookie.strip_prefix(SESSION_COOKIE_NAME) {
-            let value = value.trim_start_matches('=');
-            if !value.is_empty() {
-                return Some(value.to_string());
-            }
-        }
-    }
-    None
 }
 
 fn is_same_origin(headers: &axum::http::HeaderMap, state: &AppState) -> bool {
