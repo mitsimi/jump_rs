@@ -41,8 +41,13 @@ pub fn router() -> Router<AppState> {
     ),
     responses(
         (status = 204, description = "WoL packet sent successfully"),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 404, description = "Device not found", body = ErrorResponse),
         (status = 500, description = "Network error while sending packet", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(device_id = %id))]

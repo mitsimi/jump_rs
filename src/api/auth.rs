@@ -10,16 +10,38 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 use tracing::{info, instrument, warn};
-use utoipa::{OpenApi, ToSchema};
+use utoipa::{Modify, OpenApi, ToSchema};
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
+use utoipa::openapi::Components;
 
 use crate::app::AppState;
 use crate::auth::{AuthenticatedUser, SESSION_COOKIE_NAME};
 use crate::error::ErrorResponse;
 
+pub struct AuthSecurityAddon;
+
+impl Modify for AuthSecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        let components = openapi
+            .components
+            .get_or_insert_with(Components::new);
+
+        components.add_security_scheme(
+            "session_cookie",
+            SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new(SESSION_COOKIE_NAME))),
+        );
+        components.add_security_scheme(
+            "basic_auth",
+            SecurityScheme::Http(Http::new(HttpAuthScheme::Basic)),
+        );
+    }
+}
+
 #[derive(OpenApi)]
 #[openapi(
     paths(login, logout, me, auth_status),
     components(schemas(LoginRequest, LoginResponse, MeResponse, AuthStatusResponse, ErrorResponse)),
+    modifiers(&AuthSecurityAddon),
     tags(
         (name = "auth", description = "Authentication endpoints")
     )

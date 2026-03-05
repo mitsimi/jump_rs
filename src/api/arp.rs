@@ -50,9 +50,14 @@ pub struct ArpLookupResponse {
     request_body(content = ArpLookupRequest, description = "IP address to look up"),
     responses(
         (status = 200, description = "MAC address found", body = ArpLookupResponse),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 400, description = "Invalid IP address format", body = ErrorResponse),
         (status = 404, description = "IP not found in ARP table", body = ErrorResponse),
         (status = 500, description = "Error querying ARP table", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(target_ip = %req.ip))]

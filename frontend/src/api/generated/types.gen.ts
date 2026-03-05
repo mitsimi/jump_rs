@@ -111,6 +111,10 @@ export type ArpLookupErrors = {
      */
     400: ErrorResponse;
     /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+    /**
      * IP not found in ARP table
      */
     404: ErrorResponse;
@@ -220,6 +224,10 @@ export type GetDevicesData = {
 
 export type GetDevicesErrors = {
     /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+    /**
      * Internal server error
      */
     500: ErrorResponse;
@@ -252,6 +260,10 @@ export type CreateDeviceErrors = {
      */
     400: ErrorResponse;
     /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+    /**
      * Internal server error
      */
     500: ErrorResponse;
@@ -276,6 +288,10 @@ export type ExportDevicesData = {
 };
 
 export type ExportDevicesErrors = {
+    /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
     /**
      * Internal server error
      */
@@ -309,6 +325,10 @@ export type ImportDevicesErrors = {
      */
     400: ErrorResponse;
     /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+    /**
      * Internal server error
      */
     500: ErrorResponse;
@@ -338,6 +358,10 @@ export type DeleteDeviceData = {
 };
 
 export type DeleteDeviceErrors = {
+    /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
     /**
      * Device not found
      */
@@ -380,6 +404,10 @@ export type UpdateDeviceErrors = {
      */
     400: ErrorResponse;
     /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
+    /**
      * Device not found
      */
     404: ErrorResponse;
@@ -413,6 +441,10 @@ export type WakeDeviceData = {
 };
 
 export type WakeDeviceErrors = {
+    /**
+     * Not authenticated
+     */
+    401: ErrorResponse;
     /**
      * Device not found
      */

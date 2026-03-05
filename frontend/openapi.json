@@ -49,6 +49,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "IP not found in ARP table",
             "content": {
@@ -69,7 +79,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     },
     "/api/auth/login": {
@@ -218,6 +236,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -228,7 +256,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -269,6 +305,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -279,7 +325,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     },
     "/api/devices/export": {
@@ -304,6 +358,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -314,7 +378,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     },
     "/api/devices/import": {
@@ -363,6 +435,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Internal server error",
             "content": {
@@ -373,7 +455,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     },
     "/api/devices/{id}": {
@@ -428,6 +518,16 @@
               }
             }
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Device not found",
             "content": {
@@ -448,7 +548,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -473,6 +581,16 @@
           "204": {
             "description": "Device deleted successfully"
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Device not found",
             "content": {
@@ -493,7 +611,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     },
     "/api/devices/{id}/wake": {
@@ -520,6 +646,16 @@
           "204": {
             "description": "WoL packet sent successfully"
           },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Device not found",
             "content": {
@@ -540,7 +676,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session_cookie": []
+          },
+          {
+            "basic_auth": []
+          }
+        ]
       }
     }
   },
@@ -857,6 +1001,17 @@
             "minimum": 0
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "basic_auth": {
+        "type": "http",
+        "scheme": "basic"
+      },
+      "session_cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session_id"
       }
     }
   },

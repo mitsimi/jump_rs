@@ -58,7 +58,12 @@ pub fn router() -> Router<AppState> {
     description = "Returns a list of all registered devices that can receive Wake-on-LAN packets.",
     responses(
         (status = 200, description = "List of all devices", body = Vec<Device>),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all)]
@@ -91,7 +96,12 @@ pub struct ExportResponse {
     description = "Exports all devices in a portable format suitable for backup or migration. Does not include internal fields like id and created_at.",
     responses(
         (status = 200, description = "Exported device list", body = Vec<ExportResponse>),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all)]
@@ -136,8 +146,13 @@ pub struct ImportRequest {
     request_body(content = Vec<ImportRequest>, description = "List of devices to import"),
     responses(
         (status = 201, description = "Devices imported successfully", body = Vec<Device>),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 400, description = "Validation error (e.g., invalid MAC address)", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(count = req.len()))]
@@ -185,8 +200,13 @@ pub struct CreateDeviceRequest {
     request_body(content = CreateDeviceRequest, description = "Device to create"),
     responses(
         (status = 201, description = "Device created successfully", body = Device),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 400, description = "Validation error (e.g., invalid MAC address)", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(device_name = %req.name))]
@@ -235,9 +255,14 @@ pub struct UpdateDeviceRequest {
     request_body(content = UpdateDeviceRequest, description = "Fields to update"),
     responses(
         (status = 200, description = "Device updated successfully", body = Device),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 400, description = "Validation error (e.g., invalid MAC address)", body = ErrorResponse),
         (status = 404, description = "Device not found", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(device_id = %id))]
@@ -286,8 +311,13 @@ pub async fn update_device(
     ),
     responses(
         (status = 204, description = "Device deleted successfully"),
+        (status = 401, description = "Not authenticated", body = ErrorResponse),
         (status = 404, description = "Device not found", body = ErrorResponse),
         (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(
+        ("session_cookie" = []),
+        ("basic_auth" = [])
     )
 )]
 #[instrument(skip_all, fields(device_id = %id))]

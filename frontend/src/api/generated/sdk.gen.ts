@@ -24,6 +24,11 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Queries the system's ARP table to find the MAC address for a given IPv4 address. The IP must have recently communicated with this host to appear in the ARP table.
  */
 export const arpLookup = <ThrowOnError extends boolean = false>(options: Options<ArpLookupData, ThrowOnError>) => (options.client ?? client).post<ArpLookupResponses, ArpLookupErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
     url: '/api/arp-lookup',
     ...options,
     headers: {
@@ -58,7 +63,15 @@ export const logout = <ThrowOnError extends boolean = false>(options?: Options<L
  *
  * Returns information about the currently authenticated user.
  */
-export const me = <ThrowOnError extends boolean = false>(options?: Options<MeData, ThrowOnError>) => (options?.client ?? client).get<MeResponses, MeErrors, ThrowOnError>({ url: '/api/auth/me', ...options });
+export const me = <ThrowOnError extends boolean = false>(options?: Options<MeData, ThrowOnError>) => (options?.client ?? client).get<MeResponses, MeErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/auth/me',
+    ...options
+});
 
 /**
  * Get authentication status
@@ -72,7 +85,15 @@ export const authStatus = <ThrowOnError extends boolean = false>(options?: Optio
  *
  * Returns a list of all registered devices that can receive Wake-on-LAN packets.
  */
-export const getDevices = <ThrowOnError extends boolean = false>(options?: Options<GetDevicesData, ThrowOnError>) => (options?.client ?? client).get<GetDevicesResponses, GetDevicesErrors, ThrowOnError>({ url: '/api/devices', ...options });
+export const getDevices = <ThrowOnError extends boolean = false>(options?: Options<GetDevicesData, ThrowOnError>) => (options?.client ?? client).get<GetDevicesResponses, GetDevicesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/devices',
+    ...options
+});
 
 /**
  * Create a new device
@@ -80,6 +101,11 @@ export const getDevices = <ThrowOnError extends boolean = false>(options?: Optio
  * Creates a new device that can receive Wake-on-LAN packets. The MAC address must be valid.
  */
 export const createDevice = <ThrowOnError extends boolean = false>(options: Options<CreateDeviceData, ThrowOnError>) => (options.client ?? client).post<CreateDeviceResponses, CreateDeviceErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
     url: '/api/devices',
     ...options,
     headers: {
@@ -93,7 +119,15 @@ export const createDevice = <ThrowOnError extends boolean = false>(options: Opti
  *
  * Exports all devices in a portable format suitable for backup or migration. Does not include internal fields like id and created_at.
  */
-export const exportDevices = <ThrowOnError extends boolean = false>(options?: Options<ExportDevicesData, ThrowOnError>) => (options?.client ?? client).get<ExportDevicesResponses, ExportDevicesErrors, ThrowOnError>({ url: '/api/devices/export', ...options });
+export const exportDevices = <ThrowOnError extends boolean = false>(options?: Options<ExportDevicesData, ThrowOnError>) => (options?.client ?? client).get<ExportDevicesResponses, ExportDevicesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/devices/export',
+    ...options
+});
 
 /**
  * Import devices
@@ -101,6 +135,11 @@ export const exportDevices = <ThrowOnError extends boolean = false>(options?: Op
  * Imports multiple devices from a portable format. Useful for restoring backups or migrating from another system.
  */
 export const importDevices = <ThrowOnError extends boolean = false>(options: Options<ImportDevicesData, ThrowOnError>) => (options.client ?? client).post<ImportDevicesResponses, ImportDevicesErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
     url: '/api/devices/import',
     ...options,
     headers: {
@@ -114,7 +153,15 @@ export const importDevices = <ThrowOnError extends boolean = false>(options: Opt
  *
  * Permanently deletes a device from the system.
  */
-export const deleteDevice = <ThrowOnError extends boolean = false>(options: Options<DeleteDeviceData, ThrowOnError>) => (options.client ?? client).delete<DeleteDeviceResponses, DeleteDeviceErrors, ThrowOnError>({ url: '/api/devices/{id}', ...options });
+export const deleteDevice = <ThrowOnError extends boolean = false>(options: Options<DeleteDeviceData, ThrowOnError>) => (options.client ?? client).delete<DeleteDeviceResponses, DeleteDeviceErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/devices/{id}',
+    ...options
+});
 
 /**
  * Update a device
@@ -122,6 +169,11 @@ export const deleteDevice = <ThrowOnError extends boolean = false>(options: Opti
  * Updates an existing device. Only provided fields will be updated (partial update).
  */
 export const updateDevice = <ThrowOnError extends boolean = false>(options: Options<UpdateDeviceData, ThrowOnError>) => (options.client ?? client).put<UpdateDeviceResponses, UpdateDeviceErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
     url: '/api/devices/{id}',
     ...options,
     headers: {
@@ -135,4 +187,12 @@ export const updateDevice = <ThrowOnError extends boolean = false>(options: Opti
  *
  * Sends a Wake-on-LAN magic packet to the device. The target device must have WoL enabled in BIOS and be connected via ethernet.
  */
-export const wakeDevice = <ThrowOnError extends boolean = false>(options: Options<WakeDeviceData, ThrowOnError>) => (options.client ?? client).post<WakeDeviceResponses, WakeDeviceErrors, ThrowOnError>({ url: '/api/devices/{id}/wake', ...options });
+export const wakeDevice = <ThrowOnError extends boolean = false>(options: Options<WakeDeviceData, ThrowOnError>) => (options.client ?? client).post<WakeDeviceResponses, WakeDeviceErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'session_id',
+            type: 'apiKey'
+        }, { scheme: 'basic', type: 'http' }],
+    url: '/api/devices/{id}/wake',
+    ...options
+});
