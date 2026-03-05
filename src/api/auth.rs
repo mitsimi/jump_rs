@@ -286,7 +286,7 @@ fn is_same_origin(headers: &axum::http::HeaderMap, state: &AppState) -> bool {
         .and_then(|value| value.to_str().ok());
 
     match (origin, host) {
-        (None, _) => true,
+        (None, _) => false,
         (Some(origin), Some(host)) => {
             same_origin_match(origin, host) || is_allowed_origin(origin, state)
         }
