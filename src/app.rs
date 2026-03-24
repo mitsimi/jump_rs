@@ -34,37 +34,7 @@ impl AppState {
 }
 
 pub fn build_app(state: AppState) -> Router {
-    let cors = if state.config.auth.disabled {
-        CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-    } else {
-        let allowed_origins: Vec<HeaderValue> = state
-            .config
-            .auth
-            .allow_origins
-            .iter()
-            .filter_map(|origin| match origin.parse() {
-                Ok(origin) => Some(origin),
-                Err(err) => {
-                    tracing::warn!(origin = %origin, error = %err, "Ignoring invalid origin");
-                    None
-                }
-            })
-            .collect();
-
-        let cors = CorsLayer::new()
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .allow_credentials(true);
-
-        if allowed_origins.is_empty() {
-            cors
-        } else {
-            cors.allow_origin(AllowOrigin::list(allowed_origins))
-        }
-    };
+    let cors = build_cors_layer(&state);
 
     Router::new()
         .fallback_service(ServeDir::new("static/dist"))
@@ -99,6 +69,71 @@ pub fn build_app(state: AppState) -> Router {
         )
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
+}
+
+fn build_cors_layer(state: &AppState) -> CorsLayer {
+    if state.config.auth.disabled {
+        return CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+    }
+
+    let has_wildcard = state
+        .config
+        .auth
+        .allow_origins
+        .iter()
+        .any(|origin| origin.trim() == "*");
+
+    if has_wildcard {
+        let has_specific_origins = state
+            .config
+            .auth
+            .allow_origins
+            .iter()
+            .any(|origin| origin.trim() != "*");
+
+        if has_specific_origins {
+            tracing::warn!(
+                "CORS allow_origins contains '*' along with specific origins; specific origins are ignored"
+            );
+        }
+
+        return CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+    }
+
+    let allowed_origins: Vec<HeaderValue> = state
+        .config
+        .auth
+        .allow_origins
+        .iter()
+        .filter_map(|origin| match origin.parse() {
+            Ok(origin) => Some(origin),
+            Err(err) => {
+                tracing::warn!(
+                    origin = %origin,
+                    error = %err,
+                    "Ignoring invalid CORS origin in auth.allow_origins"
+                );
+                None
+            }
+        })
+        .collect();
+
+    let cors = CorsLayer::new()
+        .allow_methods(Any)
+        .allow_headers(Any)
+        .allow_credentials(true);
+
+    if allowed_origins.is_empty() {
+        cors
+    } else {
+        cors.allow_origin(AllowOrigin::list(allowed_origins))
+    }
 }
 
 pub fn build_service(state: AppState) -> Router {
