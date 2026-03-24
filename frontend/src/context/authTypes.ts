@@ -8,7 +8,7 @@ interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (username: string) => void;
+  login: () => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
 }

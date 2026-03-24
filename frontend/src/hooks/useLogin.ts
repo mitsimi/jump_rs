@@ -34,8 +34,8 @@ export function useLogin() {
 
       return data;
     },
-    onSuccess: (data) => {
-      setLoggedIn(data.username);
+    onSuccess: () => {
+      setLoggedIn();
     },
   });
 }
