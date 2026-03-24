@@ -1,14 +1,14 @@
 use axum::http::HeaderValue;
-use axum::{http::Request, middleware, Router};
+use axum::{Router, http::Request, middleware};
 use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
 use tower_http::trace::{DefaultOnResponse, TraceLayer};
-use tower_http::{request_id::RequestId, LatencyUnit};
+use tower_http::{LatencyUnit, request_id::RequestId};
 use tracing::Span;
 
 use crate::api;
-use crate::auth::{auth_middleware, AuthState};
+use crate::auth::{AuthState, auth_middleware};
 use crate::config::AppConfig;
 use crate::storage::SharedStorage;
 
@@ -45,7 +45,13 @@ pub fn build_app(state: AppState) -> Router {
             .auth
             .allow_origins
             .iter()
-            .filter_map(|origin| origin.parse().ok())
+            .filter_map(|origin| match origin.parse() {
+                Ok(origin) => Some(origin),
+                Err(err) => {
+                    tracing::warn!(origin = %origin, error = %err, "Ignoring invalid origin");
+                    None
+                }
+            })
             .collect();
 
         let cors = CorsLayer::new()
