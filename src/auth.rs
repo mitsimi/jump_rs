@@ -195,9 +195,12 @@ fn extract_basic_auth(request: &Request<Body>) -> Option<(String, String)> {
     let auth_header = request.headers().get(header::AUTHORIZATION)?;
     let auth_str = auth_header.to_str().ok()?;
 
-    let encoded = auth_str.strip_prefix("Basic ")?;
-    let decoded = String::from_utf8(BASE64_STANDARD.decode(encoded).ok()?).ok()?;
+    let (scheme, encoded) = auth_str.split_once(' ')?;
+    if !scheme.eq_ignore_ascii_case("Basic") {
+        return None;
+    }
 
+    let decoded = String::from_utf8(BASE64_STANDARD.decode(encoded).ok()?).ok()?;
     let (username, password) = decoded.split_once(':')?;
     Some((username.to_string(), password.to_string()))
 }
