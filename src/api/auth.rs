@@ -15,7 +15,9 @@ use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, Secur
 use utoipa::{Modify, OpenApi, ToSchema};
 
 use crate::app::AppState;
-use crate::auth::{AuthenticatedUser, SESSION_COOKIE_NAME};
+use crate::auth::{
+    AuthenticatedUser, SESSION_COOKIE_NAME, is_allowed_origin as is_allowed_origin_config,
+};
 use crate::error::ErrorResponse;
 
 pub struct AuthSecurityAddon;
@@ -293,55 +295,7 @@ fn is_same_origin(headers: &axum::http::HeaderMap, state: &AppState) -> bool {
 }
 
 fn is_allowed_origin(origin: &str, state: &AppState) -> bool {
-    if state.config.auth.allow_origins.is_empty() {
-        return false;
-    }
-
-    state
-        .config
-        .auth
-        .allow_origins
-        .iter()
-        .any(|allowed| origin_matches(allowed, origin))
-}
-
-fn origin_matches(allowed: &str, origin: &str) -> bool {
-    if allowed == "*" {
-        return true;
-    }
-
-    if !allowed.contains('*') {
-        return allowed == origin;
-    }
-
-    let allowed = allowed.trim_end_matches('/');
-    let origin = origin.trim_end_matches('/');
-
-    if allowed == "*" {
-        return true;
-    }
-
-    let parts: Vec<&str> = allowed.split('*').collect();
-    if parts.len() != 2 {
-        return false;
-    }
-
-    let prefix = parts[0];
-    let suffix = parts[1];
-    if !origin.starts_with(prefix) {
-        return false;
-    }
-
-    if !suffix.is_empty() && !origin.ends_with(suffix) {
-        return false;
-    }
-
-    if origin.len() < prefix.len() + suffix.len() {
-        return false;
-    }
-
-    let middle = &origin[prefix.len()..origin.len() - suffix.len()];
-    !middle.contains('/')
+    is_allowed_origin_config(origin, &state.config.auth.allow_origins)
 }
 
 fn same_origin_match(origin: &str, host: &str) -> bool {

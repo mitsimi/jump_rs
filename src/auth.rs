@@ -19,9 +19,78 @@ use tracing::{instrument, warn};
 use utoipa::ToSchema;
 
 use crate::app::AppState;
+use crate::config::AuthConfig;
 use crate::error::ErrorResponse;
 
 pub const SESSION_COOKIE_NAME: &str = "session_id";
+
+pub fn validate_auth_config(config: &AuthConfig) -> Result<(), String> {
+    if !config.disabled && has_global_wildcard(&config.allow_origins) {
+        return Err(
+            "Invalid auth.allow_origins: '*' is not allowed when auth.disabled=false. Use explicit origins or single-wildcard patterns such as 'http://localhost:*'.".to_string(),
+        );
+    }
+
+    Ok(())
+}
+
+pub fn has_global_wildcard(allow_origins: &[String]) -> bool {
+    allow_origins.iter().any(|origin| origin.trim() == "*")
+}
+
+pub fn is_allowed_origin(origin: &str, allow_origins: &[String]) -> bool {
+    if allow_origins.is_empty() {
+        return false;
+    }
+
+    allow_origins
+        .iter()
+        .any(|allowed| origin_matches(allowed, origin))
+}
+
+pub fn origin_matches(allowed: &str, origin: &str) -> bool {
+    if allowed == "*" {
+        return true;
+    }
+
+    if !allowed.contains('*') {
+        return normalize_origin(allowed) == normalize_origin(origin);
+    }
+
+    let allowed = normalize_origin(allowed);
+    let origin = normalize_origin(origin);
+
+    if allowed == "*" {
+        return true;
+    }
+
+    let parts: Vec<&str> = allowed.split('*').collect();
+    if parts.len() != 2 {
+        return false;
+    }
+
+    let prefix = parts[0];
+    let suffix = parts[1];
+
+    if !origin.starts_with(prefix) {
+        return false;
+    }
+
+    if !suffix.is_empty() && !origin.ends_with(suffix) {
+        return false;
+    }
+
+    if origin.len() < prefix.len() + suffix.len() {
+        return false;
+    }
+
+    let middle = &origin[prefix.len()..origin.len() - suffix.len()];
+    !middle.contains('/')
+}
+
+fn normalize_origin(origin: &str) -> &str {
+    origin.trim().trim_end_matches('/')
+}
 
 #[derive(Clone)]
 pub struct UserStore {
@@ -338,5 +407,56 @@ mod tests {
         assert!(!is_public_path("/api/auth/me"));
         assert!(!is_public_path("/api/devices"));
         assert!(!is_public_path("/api/devices/123"));
+    }
+
+    #[test]
+    fn test_origin_matches_exact() {
+        assert!(origin_matches(
+            "http://localhost:3000",
+            "http://localhost:3000"
+        ));
+        assert!(origin_matches(
+            "http://localhost:3000/",
+            "http://localhost:3000"
+        ));
+        assert!(!origin_matches(
+            "http://localhost:3000",
+            "http://localhost:5173"
+        ));
+    }
+
+    #[test]
+    fn test_origin_matches_single_wildcard() {
+        assert!(origin_matches(
+            "http://localhost:*",
+            "http://localhost:5173"
+        ));
+        assert!(origin_matches(
+            "https://*.example.com",
+            "https://api.example.com"
+        ));
+        assert!(!origin_matches(
+            "http://localhost:*",
+            "http://localhost:5173/path"
+        ));
+    }
+
+    #[test]
+    fn test_origin_matches_rejects_multi_wildcard_patterns() {
+        assert!(!origin_matches("http://*:*", "http://localhost:5173"));
+        assert!(!origin_matches("*://localhost:*", "http://localhost:5173"));
+    }
+
+    #[test]
+    fn test_validate_auth_config_rejects_global_wildcard_when_enabled() {
+        let config = AuthConfig {
+            disabled: false,
+            users: String::new(),
+            session_timeout: 3600,
+            allow_insecure_cookies: false,
+            allow_origins: vec!["*".to_string()],
+        };
+
+        assert!(validate_auth_config(&config).is_err());
     }
 }

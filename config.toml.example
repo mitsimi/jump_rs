@@ -29,7 +29,8 @@ session_timeout = 86400
 allow_insecure_cookies = false
 
 # Explicit origins allowed for auth actions
-# Supports "*" and single-wildcard patterns like "http://localhost:*"
+# Supports single-wildcard patterns like "http://localhost:*"
+# NOTE: "*" is rejected when auth is enabled.
 # Example: ["http://localhost:5173", "http://localhost:*"]
 allow_origins = []
 

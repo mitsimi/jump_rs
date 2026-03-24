@@ -1,4 +1,4 @@
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::{self, LogFormat};
 
@@ -17,8 +17,8 @@ pub fn init_tracing() {
 
     #[cfg(feature = "otlp")]
     {
-        use opentelemetry::trace::TracerProvider;
         use opentelemetry::KeyValue;
+        use opentelemetry::trace::TracerProvider;
         use opentelemetry_otlp::WithExportConfig;
         use opentelemetry_sdk::Resource;
 

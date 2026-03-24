@@ -8,7 +8,7 @@ use tower_http::{LatencyUnit, request_id::RequestId};
 use tracing::Span;
 
 use crate::api;
-use crate::auth::{AuthState, auth_middleware};
+use crate::auth::{AuthState, auth_middleware, is_allowed_origin};
 use crate::config::AppConfig;
 use crate::storage::SharedStorage;
 
@@ -79,31 +79,25 @@ fn build_cors_layer(state: &AppState) -> CorsLayer {
             .allow_headers(Any);
     }
 
-    let has_wildcard = state
+    let has_pattern_origins = state
         .config
         .auth
         .allow_origins
         .iter()
-        .any(|origin| origin.trim() == "*");
+        .any(|origin| origin.contains('*'));
 
-    if has_wildcard {
-        let has_specific_origins = state
-            .config
-            .auth
-            .allow_origins
-            .iter()
-            .any(|origin| origin.trim() != "*");
+    let cors = CorsLayer::new()
+        .allow_methods(Any)
+        .allow_headers(Any)
+        .allow_credentials(true);
 
-        if has_specific_origins {
-            tracing::warn!(
-                "CORS allow_origins contains '*' along with specific origins; specific origins are ignored"
-            );
-        }
-
-        return CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any);
+    if has_pattern_origins {
+        let allow_origins = state.config.auth.allow_origins.clone();
+        return cors.allow_origin(AllowOrigin::predicate(move |origin, _| {
+            origin
+                .to_str()
+                .is_ok_and(|origin| is_allowed_origin(origin, &allow_origins))
+        }));
     }
 
     let allowed_origins: Vec<HeaderValue> = state
@@ -123,11 +117,6 @@ fn build_cors_layer(state: &AppState) -> CorsLayer {
             }
         })
         .collect();
-
-    let cors = CorsLayer::new()
-        .allow_methods(Any)
-        .allow_headers(Any)
-        .allow_credentials(true);
 
     if allowed_origins.is_empty() {
         cors

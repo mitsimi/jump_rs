@@ -11,7 +11,9 @@ mod telemetry;
 mod wol;
 
 use crate::app::{AppState, build_service};
-use crate::auth::{AuthState, SessionManager, UserStore};
+use crate::auth::{
+    AuthState, SessionManager, UserStore, has_global_wildcard, validate_auth_config,
+};
 use crate::cli::Cli;
 use crate::storage::SharedStorage;
 use clap::Parser;
@@ -36,8 +38,26 @@ async fn main() {
         }
     };
 
+    if let Err(err) = validate_auth_config(&config.auth) {
+        eprintln!("Failed to load configuration: {err}");
+        std::process::exit(1);
+    }
+
     telemetry::init_tracing();
     info!(version = env!("CARGO_PKG_VERSION"), "Starting jump.rs");
+
+    if config.auth.disabled
+        && has_global_wildcard(&config.auth.allow_origins)
+        && config
+            .auth
+            .allow_origins
+            .iter()
+            .any(|origin| origin.trim() != "*")
+    {
+        warn!(
+            "auth.allow_origins contains '*' along with specific origins; specific origins are ignored"
+        );
+    }
 
     let storage: SharedStorage = {
         let file_path = &config.storage.file_path;
