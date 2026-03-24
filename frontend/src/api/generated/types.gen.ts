@@ -147,6 +147,10 @@ export type LoginErrors = {
      * Invalid credentials
      */
     401: ErrorResponse;
+    /**
+     * Origin not allowed
+     */
+    403: ErrorResponse;
 };
 
 export type LoginError = LoginErrors[keyof LoginErrors];

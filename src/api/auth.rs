@@ -10,9 +10,9 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::{Deserialize, Serialize};
 use time::Duration;
 use tracing::{info, instrument, warn};
-use utoipa::{Modify, OpenApi, ToSchema};
-use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use utoipa::openapi::Components;
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
+use utoipa::{Modify, OpenApi, ToSchema};
 
 use crate::app::AppState;
 use crate::auth::{AuthenticatedUser, SESSION_COOKIE_NAME};
@@ -22,9 +22,7 @@ pub struct AuthSecurityAddon;
 
 impl Modify for AuthSecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        let components = openapi
-            .components
-            .get_or_insert_with(Components::new);
+        let components = openapi.components.get_or_insert_with(Components::new);
 
         components.add_security_scheme(
             "session_cookie",
@@ -95,7 +93,8 @@ pub struct AuthStatusResponse {
     request_body = LoginRequest,
     responses(
         (status = 200, description = "Login successful", body = LoginResponse),
-        (status = 401, description = "Invalid credentials", body = ErrorResponse)
+        (status = 401, description = "Invalid credentials", body = ErrorResponse),
+        (status = 403, description = "Origin not allowed", body = ErrorResponse)
     )
 )]
 #[instrument(skip_all, fields(username = %payload.username))]
@@ -141,7 +140,7 @@ pub async fn login(
             jar.remove(removal_cookie),
             Json(serde_json::json!({
                 "status": "error",
-                "message": "Invalid username or password"
+                "message": "Invalid credentials"
             })),
         )
             .into_response();
@@ -286,7 +285,6 @@ fn is_same_origin(headers: &axum::http::HeaderMap, state: &AppState) -> bool {
         .and_then(|value| value.to_str().ok());
 
     match (origin, host) {
-        (None, _) => false,
         (Some(origin), Some(host)) => {
             same_origin_match(origin, host) || is_allowed_origin(origin, state)
         }
