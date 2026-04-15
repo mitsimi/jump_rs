@@ -101,9 +101,10 @@ impl Default for WolConfig {
 pub struct AuthConfig {
     /// Whether authentication is disabled.
     pub disabled: bool,
-    /// String of comma-separated usernames and passwords.
-    /// Format: username:password,username:password,...
-    /// Passwords are hashed using bcrypt.
+    /// String of comma-separated usernames and bcrypt hashes.
+    /// Format: username:bcrypt_hash,username:bcrypt_hash,...
+    /// Bcrypt hashes must be computed externally and start with "$2" (e.g., "$2b$12$...").
+    /// Hashes are verified using bcrypt::verify(). Example: htpasswd -bnBC 12 "" password | tr -d ':\n'
     pub users: String,
     /// Session timeout in seconds.
     pub session_timeout: u64,
