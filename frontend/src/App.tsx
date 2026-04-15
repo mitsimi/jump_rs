@@ -11,8 +11,14 @@ import type { Device } from "./types/device";
 
 function LoadingScreen() {
   return (
-    <div className="loading-screen">
-      <div className="loading-spinner" />
+    <div
+      className="loading-screen"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="loading-spinner" aria-hidden="true" />
+      <span className="sr-only">Loading…</span>
     </div>
   );
 }

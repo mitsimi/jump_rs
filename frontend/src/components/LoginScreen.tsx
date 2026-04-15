@@ -73,7 +73,7 @@ export function LoginScreen() {
             )}
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>
+              <label className={styles.label} htmlFor="username">
                 <span className={styles.labelText}>Username</span>
                 <span className={styles.labelLine} />
               </label>
@@ -92,6 +92,7 @@ export function LoginScreen() {
                   </svg>
                 </span>
                 <input
+                  id="username"
                   className={styles.input}
                   placeholder="Enter username"
                   autoComplete="username"
@@ -109,7 +110,7 @@ export function LoginScreen() {
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>
+              <label className={styles.label} htmlFor="password">
                 <span className={styles.labelText}>Password</span>
                 <span className={styles.labelLine} />
               </label>
@@ -128,6 +129,7 @@ export function LoginScreen() {
                   </svg>
                 </span>
                 <input
+                  id="password"
                   className={styles.input}
                   type="password"
                   placeholder="Enter password"
