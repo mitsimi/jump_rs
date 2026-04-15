@@ -116,8 +116,7 @@ pub async fn login(
             StatusCode::FORBIDDEN,
             Json(serde_json::json!({
                 "status": "error",
-                "message": "Origin not allowed.",
-                "code": "origin_not_allowed",
+                "message": "Origin not allowed."
             })),
         )
             .into_response();
