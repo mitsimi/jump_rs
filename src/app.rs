@@ -9,6 +9,7 @@ use tracing::Span;
 
 use crate::api;
 use crate::storage::SharedStorage;
+use crate::web;
 
 pub fn build_app(storage: SharedStorage) -> Router {
     let cors = CorsLayer::new()
@@ -17,8 +18,9 @@ pub fn build_app(storage: SharedStorage) -> Router {
         .allow_headers(Any);
 
     Router::new()
-        .fallback_service(ServeDir::new("static/dist"))
+        .merge(web::router())
         .merge(api::router())
+        .nest_service("/static", ServeDir::new("static"))
         .layer(Extension(storage))
         .layer(cors)
         .layer(

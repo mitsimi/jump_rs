@@ -2,7 +2,7 @@ use axum::{Extension, Router, extract::Path, http::StatusCode, routing::post};
 use tracing::{info, instrument};
 use utoipa::OpenApi;
 
-use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage, wol};
+use crate::{api::ApiResult, error::ErrorResponse, storage::SharedStorage};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -45,12 +45,7 @@ pub async fn wake_device(
     Extension(storage): Extension<SharedStorage>,
     Path(id): Path<String>,
 ) -> ApiResult<StatusCode> {
-    let device = storage
-        .get(&id)
-        .ok_or(crate::storage::StorageError::NotFound(id))?;
-
-    wol::send_wol_packet(&device)?;
-
-    info!(device_name = %device.name, mac = %device.mac_address, "WoL packet sent");
+    crate::devices::wake_device(&storage, &id)?;
+    info!(device_id = %id, "WoL packet sent");
     Ok(StatusCode::NO_CONTENT)
 }

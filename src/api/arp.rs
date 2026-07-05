@@ -2,7 +2,7 @@ use axum::{Json, Router, routing::post};
 use tracing::{info, instrument};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::{api::ApiResult, arp, error::ErrorResponse};
+use crate::{api::ApiResult, error::ErrorResponse};
 
 #[derive(OpenApi)]
 #[openapi(
@@ -57,7 +57,7 @@ pub struct ArpLookupResponse {
 )]
 #[instrument(skip_all, fields(target_ip = %req.ip))]
 pub async fn arp_lookup(Json(req): Json<ArpLookupRequest>) -> ApiResult<Json<ArpLookupResponse>> {
-    let mac = arp::lookup_mac(&req.ip)?;
+    let mac = crate::devices::arp_lookup(&req.ip)?;
     info!(mac = %mac, "ARP lookup successful");
     Ok(Json(ArpLookupResponse { mac }))
 }

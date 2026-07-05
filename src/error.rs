@@ -36,7 +36,7 @@ pub enum ApiError {
 }
 
 impl ApiError {
-    const fn status_code(&self) -> StatusCode {
+    pub const fn status_code(&self) -> StatusCode {
         match self {
             Self::Validation(_) => StatusCode::BAD_REQUEST,
 

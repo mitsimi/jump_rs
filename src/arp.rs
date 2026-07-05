@@ -1,4 +1,3 @@
-use regex::Regex;
 use std::net::Ipv4Addr;
 use std::process::Command;
 use thiserror::Error;
@@ -52,24 +51,192 @@ fn ping_ip(ip: Ipv4Addr) -> Result<(), ArpError> {
 #[instrument(skip_all)]
 fn get_mac_from_arp(ip: &str) -> Result<String, ArpError> {
     debug!("Querying ARP table");
-    let output = Command::new("arp")
-        .args(["-a"])
-        .output()
-        .map_err(ArpError::Query)?;
+    if let Some(mac) = query_arp(["-n", ip], ip)? {
+        return Ok(mac);
+    }
 
-    let output_str = String::from_utf8_lossy(&output.stdout);
+    if let Some(mac) = query_ip_neighbor(ip)? {
+        return Ok(mac);
+    }
 
-    let ip_pattern = format!(r"\? \({}\) at ([0-9A-Fa-f:]{{17}})", regex::escape(ip));
-    let ip_mac_pattern = Regex::new(&ip_pattern).unwrap();
-
-    if let Some(caps) = ip_mac_pattern.captures(&output_str)
-        && let Some(mac_match) = caps.get(1)
-    {
-        let mac = mac_match.as_str().to_uppercase();
-        debug!(mac = %mac, "MAC address found in ARP table");
+    if let Some(mac) = query_arp(["-a"], ip)? {
         return Ok(mac);
     }
 
     warn!("MAC address not found in ARP table");
     Err(ArpError::NotFound(ip.to_string()))
+}
+
+fn query_arp<const N: usize>(args: [&str; N], ip: &str) -> Result<Option<String>, ArpError> {
+    let output = Command::new("arp")
+        .args(args)
+        .output()
+        .map_err(ArpError::Query)?;
+    let output_str = String::from_utf8_lossy(&output.stdout);
+
+    if let Some(mac) = parse_arp_output(&output_str, ip) {
+        debug!(mac = %mac, "MAC address found in ARP table");
+        return Ok(Some(mac));
+    }
+
+    Ok(None)
+}
+
+fn query_ip_neighbor(ip: &str) -> Result<Option<String>, ArpError> {
+    let output = match Command::new("ip").args(["neigh", "show", ip]).output() {
+        Ok(output) => output,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(err) => return Err(ArpError::Query(err)),
+    };
+    let output_str = String::from_utf8_lossy(&output.stdout);
+
+    if let Some(mac) = parse_ip_neighbor_output(&output_str, ip) {
+        debug!(mac = %mac, "MAC address found in neighbor table");
+        return Ok(Some(mac));
+    }
+
+    Ok(None)
+}
+
+fn parse_arp_output(output: &str, ip: &str) -> Option<String> {
+    output.lines().find_map(|line| parse_arp_line_mac(line, ip))
+}
+
+fn parse_arp_line_mac(line: &str, ip: &str) -> Option<String> {
+    if let Some(mac) = parse_bsd_arp_line(line, ip) {
+        return Some(mac);
+    }
+
+    parse_linux_arp_line(line, ip)
+}
+
+fn parse_bsd_arp_line(line: &str, ip: &str) -> Option<String> {
+    if !line.contains(&format!("({ip}) ")) {
+        return None;
+    }
+
+    let after_at = line.split_once(" at ")?.1;
+    let mac = after_at.split_whitespace().next()?;
+    normalize_mac(mac)
+}
+
+fn parse_linux_arp_line(line: &str, ip: &str) -> Option<String> {
+    let mut fields = line.split_whitespace();
+    if fields.next()? != ip {
+        return None;
+    }
+
+    let _hardware_type = fields.next()?;
+    let mac = fields.next()?;
+    normalize_mac(mac)
+}
+
+fn parse_ip_neighbor_output(output: &str, ip: &str) -> Option<String> {
+    output
+        .lines()
+        .find_map(|line| parse_ip_neighbor_line(line, ip))
+}
+
+fn parse_ip_neighbor_line(line: &str, ip: &str) -> Option<String> {
+    let mut fields = line.split_whitespace();
+    if fields.next()? != ip {
+        return None;
+    }
+
+    while let Some(field) = fields.next() {
+        if field == "lladdr" {
+            return fields.next().and_then(normalize_mac);
+        }
+    }
+
+    None
+}
+
+fn normalize_mac(mac: &str) -> Option<String> {
+    let octets: Vec<&str> = mac.split(':').collect();
+    if octets.len() != 6 {
+        return None;
+    }
+
+    let mut normalized = Vec::with_capacity(6);
+    for octet in octets {
+        if octet.is_empty() || octet.len() > 2 || !octet.chars().all(|ch| ch.is_ascii_hexdigit()) {
+            return None;
+        }
+        normalized.push(format!("{octet:0>2}").to_uppercase());
+    }
+
+    Some(normalized.join(":"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_darwin_padded_mac() {
+        let output = "? (192.168.0.20) at 10:ff:e0:6b:65:3b on en0 ifscope [ethernet]";
+        assert_eq!(
+            parse_arp_output(output, "192.168.0.20").as_deref(),
+            Some("10:FF:E0:6B:65:3B")
+        );
+    }
+
+    #[test]
+    fn parse_darwin_unpadded_mac() {
+        let output = "? (192.168.0.1) at 2:10:18:50:19:8c on en0 ifscope [ethernet]";
+        assert_eq!(
+            parse_arp_output(output, "192.168.0.1").as_deref(),
+            Some("02:10:18:50:19:8C")
+        );
+    }
+
+    #[test]
+    fn ignores_other_ip_entries() {
+        let output = "? (192.168.0.1) at 2:10:18:50:19:8c on en0 ifscope [ethernet]";
+        assert_eq!(parse_arp_output(output, "192.168.0.20"), None);
+    }
+
+    #[test]
+    fn rejects_non_mac_entries() {
+        let output = "? (192.168.0.20) at incomplete on en0 ifscope [ethernet]";
+        assert_eq!(parse_arp_output(output, "192.168.0.20"), None);
+    }
+
+    #[test]
+    fn parse_linux_net_tools_arp_entry() {
+        let output = "\
+Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.0.20             ether   10:ff:e0:6b:65:3b   C                     eth0";
+        assert_eq!(
+            parse_arp_output(output, "192.168.0.20").as_deref(),
+            Some("10:FF:E0:6B:65:3B")
+        );
+    }
+
+    #[test]
+    fn parse_linux_net_tools_unpadded_arp_entry() {
+        let output = "\
+Address                  HWtype  HWaddress           Flags Mask            Iface
+192.168.0.1              ether   2:10:18:50:19:8c    C                     eth0";
+        assert_eq!(
+            parse_arp_output(output, "192.168.0.1").as_deref(),
+            Some("02:10:18:50:19:8C")
+        );
+    }
+
+    #[test]
+    fn parse_ip_neighbor_entry() {
+        let output = "192.168.0.20 dev eth0 lladdr 10:ff:e0:6b:65:3b REACHABLE";
+        assert_eq!(
+            parse_ip_neighbor_output(output, "192.168.0.20").as_deref(),
+            Some("10:FF:E0:6B:65:3B")
+        );
+    }
+
+    #[test]
+    fn ignores_ip_neighbor_entry_without_mac() {
+        let output = "192.168.0.20 dev eth0 FAILED";
+        assert_eq!(parse_ip_neighbor_output(output, "192.168.0.20"), None);
+    }
 }

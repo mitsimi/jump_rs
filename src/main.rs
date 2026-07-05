@@ -1,12 +1,16 @@
+#![allow(clippy::needless_for_each)]
+
 mod api;
 mod app;
 mod arp;
 mod cli;
 mod config;
+mod devices;
 mod error;
 mod models;
 mod storage;
 mod telemetry;
+mod web;
 mod wol;
 
 use crate::app::build_service;
