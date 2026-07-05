@@ -11,13 +11,22 @@ pub enum ArpError {
     #[error("Failed to query ARP table: {0}")]
     Query(#[source] std::io::Error),
 
-    #[error(
-        "IP {ip} is not on a directly connected network from this runtime ({route}). MAC lookup requires layer-2 access; Docker Desktop/OrbStack containers usually cannot ARP the host LAN."
-    )]
+    #[error("MAC lookup needs direct LAN access from this runtime.")]
     NotDirectlyConnected { ip: String, route: String },
 
     #[error("MAC address not found for IP {0}")]
     NotFound(String),
+}
+
+impl ArpError {
+    pub const fn hint(&self) -> Option<&'static str> {
+        match self {
+            Self::NotDirectlyConnected { .. } => Some(
+                "ARP-based MAC lookup only works when jump_rs can access the target device on the same layer-2 network. Docker Desktop, OrbStack, and other VM-backed Docker runtimes may hide LAN devices even with host networking. Running jump_rs directly on the host or in a Linux host-network container usually fixes this.",
+            ),
+            Self::InvalidIp(_) | Self::Query(_) | Self::NotFound(_) => None,
+        }
+    }
 }
 
 /// Looks up the MAC address for a given IP by pinging it and checking the ARP table.

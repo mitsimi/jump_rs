@@ -329,9 +329,29 @@ pub fn mac_lookup_controls(mac: &str) -> Markup {
 }
 
 pub fn mac_lookup_error(mac: &str, error: &str) -> Markup {
+    mac_lookup_error_with_hint(mac, error, None)
+}
+
+pub fn mac_lookup_error_with_hint(mac: &str, error: &str, hint: Option<&str>) -> Markup {
     html! {
         (mac_lookup_controls(mac))
-        span class="error-message" { (error) }
+        span class="error-message error-message--inline" {
+            span { (error) }
+            @if let Some(hint) = hint {
+                span class="tooltip" {
+                    button
+                        class="tooltip__trigger"
+                        type="button"
+                        aria-label="Why this happens"
+                        aria-describedby="mac-lookup-error-hint" {
+                        (icon(Icon::Info))
+                    }
+                    span id="mac-lookup-error-hint" class="tooltip__content" role="tooltip" {
+                        (hint)
+                    }
+                }
+            }
+        }
     }
 }
 

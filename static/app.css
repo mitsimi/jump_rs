@@ -702,12 +702,112 @@ body::after {
     font-size: 0.75rem;
 }
 
+.error-message--inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .error-message--block {
     margin: 0 0 18px;
     padding: 12px 16px;
     border: 1px solid rgba(255, 71, 87, 0.35);
     border-radius: 3px;
     background: rgba(255, 71, 87, 0.1);
+}
+
+.tooltip {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.tooltip__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(255, 71, 87, 0.35);
+    border-radius: 50%;
+    background: rgba(255, 71, 87, 0.08);
+    color: var(--error);
+    cursor: help;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.tooltip__trigger .icon {
+    width: 0.875rem;
+    height: 0.875rem;
+}
+
+.tooltip__trigger:hover,
+.tooltip__trigger:focus-visible {
+    border-color: var(--error);
+    background: rgba(255, 71, 87, 0.16);
+    outline: none;
+}
+
+.tooltip__content {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    z-index: 10;
+    width: min(360px, calc(100vw - 64px));
+    padding: 12px 14px;
+    transform: translateX(-50%) translateY(4px);
+    border: 1px solid var(--border-active);
+    border-radius: 4px;
+    background: var(--bg-secondary);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1.5;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        opacity 0.16s ease,
+        transform 0.16s ease;
+}
+
+.tooltip__content::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border-right: 1px solid var(--border-active);
+    border-bottom: 1px solid var(--border-active);
+    background: var(--bg-secondary);
+}
+
+.tooltip:hover .tooltip__content,
+.tooltip__trigger:focus-visible + .tooltip__content {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.error-message--inline .tooltip__content {
+    right: 0;
+    left: auto;
+    transform: translateY(4px);
+}
+
+.error-message--inline .tooltip__content::after {
+    right: 12px;
+    left: auto;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.error-message--inline .tooltip:hover .tooltip__content,
+.error-message--inline .tooltip__trigger:focus-visible + .tooltip__content {
+    transform: translateY(0);
 }
 
 .transfer__modal-body {

@@ -15,6 +15,8 @@ use axum::{
 };
 
 use crate::{
+    arp::ArpError,
+    error::ApiError,
     storage::SharedStorage,
     web::{
         error::{WebError, WebResult, api_result, form_result},
@@ -135,9 +137,16 @@ async fn arp_lookup(Form(form): Form<ArpLookupForm>) -> Response {
         return views::mac_lookup_error(&current_mac, "Enter an IP address first").into_response();
     }
 
-    match api_result(crate::devices::arp_lookup(ip)) {
+    match crate::devices::arp_lookup(ip) {
         Ok(mac) => views::mac_lookup_controls(&mac).into_response(),
-        Err(err) => views::mac_lookup_error(&current_mac, &err.message()).into_response(),
+        Err(ApiError::Arp(err @ ArpError::NotDirectlyConnected { .. })) => {
+            views::mac_lookup_error_with_hint(&current_mac, &err.to_string(), err.hint())
+                .into_response()
+        }
+        Err(err) => {
+            let err = WebError::Api(err);
+            views::mac_lookup_error(&current_mac, &err.message()).into_response()
+        }
     }
 }
 
