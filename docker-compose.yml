@@ -18,9 +18,6 @@ services:
     # - JUMPERS_STORAGE_FILE_PATH=/app/devices.json
     # Wake-on-LAN configuration
     # - JUMPERS_WOL_DEFAULT_PORT=9
-    # OpenTelemetry (requires "otlp" feature)
-    # - JUMPERS_OTEL_ENDPOINT=http://localhost:4317
-    # - JUMPERS_OTEL_SERVICE_NAME=jump_rs
     # Custom config file path (optional)
     # - JUMPERS_CONFIG=/app/config.toml
     restart: unless-stopped

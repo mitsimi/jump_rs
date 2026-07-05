@@ -14,8 +14,6 @@ pub struct AppConfig {
     pub server: ServerConfig,
     pub storage: StorageConfig,
     pub wol: WolConfig,
-    #[cfg(feature = "otlp")]
-    pub otel: OtelConfig,
 }
 
 #[derive(Debug, Deserialize)]
@@ -67,15 +65,6 @@ pub struct WolConfig {
     pub default_port: u16,
 }
 
-#[cfg(feature = "otlp")]
-#[derive(Debug, Deserialize)]
-pub struct OtelConfig {
-    /// OTLP endpoint URL (e.g., <http://localhost:4317>). If empty, OTEL is disabled.
-    pub endpoint: Option<String>,
-    /// Service name for traces. Defaults to `jump_rs`.
-    pub service_name: String,
-}
-
 impl Default for ServerConfig {
     fn default() -> Self {
         Self {
@@ -97,16 +86,6 @@ impl Default for StorageConfig {
 impl Default for WolConfig {
     fn default() -> Self {
         Self { default_port: 9 }
-    }
-}
-
-#[cfg(feature = "otlp")]
-impl Default for OtelConfig {
-    fn default() -> Self {
-        Self {
-            endpoint: None,
-            service_name: "jump_rs".to_string(),
-        }
     }
 }
 
@@ -132,9 +111,6 @@ fn load() -> Result<AppConfig, ConfigError> {
         .set_default("server.log_format", "compact")?
         .set_default("storage.file_path", "devices.json")?
         .set_default("wol.default_port", 9)?;
-
-    #[cfg(feature = "otlp")]
-    let builder = builder.set_default("otel.service_name", "jump_rs")?;
 
     let config = builder
         .add_source(File::with_name(&config_path).required(false))

@@ -8,8 +8,6 @@
 #   JUMPERS_SERVER_LOG_FORMAT=json
 #   JUMPERS_STORAGE_FILE_PATH=/data/devices.json
 #   JUMPERS_WOL_DEFAULT_PORT=7
-#   JUMPERS_OTEL_ENDPOINT=http://localhost:4317
-#   JUMPERS_OTEL_SERVICE_NAME=my-jump-instance
 #
 # To use a custom config file path, set JUMPERS_CONFIG=/path/to/config.toml
 
@@ -30,11 +28,3 @@ file_path = "devices.json"
 [wol]
 # Default UDP port for Wake-on-LAN magic packets (standard is 9)
 default_port = 9
-
-[otel]
-# OpenTelemetry OTLP endpoint (requires "otlp" feature)
-# If not set, OTEL tracing is disabled.
-# endpoint = "http://localhost:4317"
-
-# Service name for traces
-service_name = "jump_rs"

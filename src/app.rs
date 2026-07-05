@@ -1,10 +1,12 @@
 use axum::Extension;
-use axum::{Router, http::Request};
+use axum::{Router, http::Request, response::Response};
+use std::time::Duration;
+use tower_http::classify::ServerErrorsFailureClass;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::request_id::RequestId;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
-use tower_http::trace::{DefaultOnResponse, TraceLayer};
-use tower_http::{LatencyUnit, request_id::RequestId};
+use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 use crate::api;
@@ -43,7 +45,22 @@ pub fn build_app(storage: SharedStorage) -> Router {
                 .on_request(|_request: &Request<axum::body::Body>, _span: &Span| {
                     tracing::debug!("started processing request");
                 })
-                .on_response(DefaultOnResponse::new().latency_unit(LatencyUnit::Micros)),
+                .on_response(|response: &Response, latency: Duration, _span: &Span| {
+                    tracing::info!(
+                        status = response.status().as_u16(),
+                        latency_us = latency.as_micros(),
+                        "finished processing request"
+                    );
+                })
+                .on_failure(
+                    |error: ServerErrorsFailureClass, latency: Duration, _span: &Span| {
+                        tracing::error!(
+                            error = %error,
+                            latency_us = latency.as_micros(),
+                            "request failed"
+                        );
+                    },
+                ),
         )
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))

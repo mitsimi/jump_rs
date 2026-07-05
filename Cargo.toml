@@ -4,10 +4,6 @@ version = "1.1.0"
 edition = "2024"
 description = "Wake-on-LAN web server"
 
-[features]
-default = []
-otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:tracing-opentelemetry"]
-
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 axum = "0.8"
@@ -30,12 +26,6 @@ time = { version = "0.3.47", features = ["serde", "serde-human-readable"] }
 # OpenAPI
 utoipa = { version = "5.4.0", features = ["axum_extras", "time"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-
-# OpenTelemetry (optional, enabled via "otlp" feature)
-opentelemetry = { version = "0.27", optional = true }
-opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"], optional = true }
-opentelemetry-otlp = { version = "0.27", features = ["tonic"], optional = true }
-tracing-opentelemetry = { version = "0.28", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

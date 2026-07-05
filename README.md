@@ -8,7 +8,7 @@ A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 - Rust-rendered web interface powered by HTMX
 - JSON-based device storage
 - Configurable via file or environment variables
-- Optional OpenTelemetry tracing support
+- Configurable structured request logging
 - Docker support included
 
 ## Quick Start
@@ -72,12 +72,6 @@ Build the project:
 
 ```bash
 cargo build
-```
-
-Run with OpenTelemetry tracing:
-
-```bash
-cargo run --features otlp
 ```
 
 Generate OpenAPI specification:

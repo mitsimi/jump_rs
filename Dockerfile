@@ -9,7 +9,7 @@ RUN mkdir src && touch src/lib.rs src/main.rs && cargo fetch
 
 COPY src/ ./src/
 
-RUN cargo build --release --features otlp
+RUN cargo build --release
 
 FROM alpine:3.23 AS runtime
 
