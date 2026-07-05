@@ -6,11 +6,11 @@ use std::sync::OnceLock;
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
 const ENV_PREFIX: &str = "JUMPERS";
 const CONFIG_PATH_ENV: &str = "JUMPERS_CONFIG";
-const API_DOCS_ENV: &str = "JUMPERS_SERVER_API_DOCS";
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 #[derive(Debug, Default, Deserialize)]
+#[serde(default)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub storage: StorageConfig,
@@ -18,11 +18,23 @@ pub struct AppConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct ServerConfig {
     pub port: u16,
     pub log_level: LogLevel,
     pub log_format: LogFormat,
     pub api_docs: bool,
+}
+
+impl Default for ServerConfig {
+    fn default() -> Self {
+        Self {
+            port: 3000,
+            log_level: LogLevel::default(),
+            log_format: LogFormat::default(),
+            api_docs: true,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -58,24 +70,9 @@ pub enum LogFormat {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct StorageConfig {
     pub file_path: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct WolConfig {
-    pub default_port: u16,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            port: 3000,
-            log_level: LogLevel::default(),
-            log_format: LogFormat::default(),
-            api_docs: true,
-        }
-    }
 }
 
 impl Default for StorageConfig {
@@ -84,6 +81,12 @@ impl Default for StorageConfig {
             file_path: "devices.json".to_string(),
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct WolConfig {
+    pub default_port: u16,
 }
 
 impl Default for WolConfig {
@@ -108,19 +111,7 @@ pub fn get() -> &'static AppConfig {
 fn load() -> Result<AppConfig, ConfigError> {
     let config_path = env::var(CONFIG_PATH_ENV).unwrap_or_else(|_| DEFAULT_CONFIG_FILE.to_string());
 
-    let mut builder = Config::builder()
-        .set_default("server.port", 3000)?
-        .set_default("server.log_level", "info")?
-        .set_default("server.log_format", "compact")?
-        .set_default("server.api_docs", true)?
-        .set_default("storage.file_path", "devices.json")?
-        .set_default("wol.default_port", 9)?;
-
-    if let Ok(api_docs) = env::var(API_DOCS_ENV) {
-        builder = builder.set_override("server.api_docs", api_docs)?;
-    }
-
-    let config = builder
+    let config = Config::builder()
         .add_source(File::with_name(&config_path).required(false))
         .add_source(
             Environment::with_prefix(ENV_PREFIX)
