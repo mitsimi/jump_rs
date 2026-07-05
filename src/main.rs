@@ -7,9 +7,9 @@ mod cli;
 mod config;
 mod devices;
 mod error;
+mod logging;
 mod models;
 mod storage;
-mod telemetry;
 mod web;
 mod wol;
 
@@ -38,7 +38,7 @@ async fn main() {
         }
     };
 
-    telemetry::init_tracing();
+    logging::init();
     info!(version = env!("CARGO_PKG_VERSION"), "Starting jump.rs");
 
     let storage: SharedStorage = {
@@ -91,10 +91,4 @@ async fn shutdown_signal() {
     }
 
     info!("Shutdown signal received");
-
-    // Flush any pending traces before shutdown
-    #[cfg(feature = "otlp")]
-    {
-        opentelemetry::global::shutdown_tracer_provider();
-    }
 }
