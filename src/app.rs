@@ -19,10 +19,16 @@ pub fn build_app(storage: SharedStorage) -> Router {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    Router::new()
+    let mut router = Router::new()
         .merge(web::router())
         .merge(api::router())
-        .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/static", ServeDir::new("static"));
+
+    if crate::config::get().server.api_docs {
+        router = router.merge(api::docs_router());
+    }
+
+    router
         .layer(Extension(storage))
         .layer(cors)
         .layer(

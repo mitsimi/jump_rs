@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 const DEFAULT_CONFIG_FILE: &str = "config.toml";
 const ENV_PREFIX: &str = "JUMPERS";
 const CONFIG_PATH_ENV: &str = "JUMPERS_CONFIG";
+const API_DOCS_ENV: &str = "JUMPERS_SERVER_API_DOCS";
 
 static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
@@ -21,6 +22,7 @@ pub struct ServerConfig {
     pub port: u16,
     pub log_level: LogLevel,
     pub log_format: LogFormat,
+    pub api_docs: bool,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -71,6 +73,7 @@ impl Default for ServerConfig {
             port: 3000,
             log_level: LogLevel::default(),
             log_format: LogFormat::default(),
+            api_docs: true,
         }
     }
 }
@@ -105,12 +108,17 @@ pub fn get() -> &'static AppConfig {
 fn load() -> Result<AppConfig, ConfigError> {
     let config_path = env::var(CONFIG_PATH_ENV).unwrap_or_else(|_| DEFAULT_CONFIG_FILE.to_string());
 
-    let builder = Config::builder()
+    let mut builder = Config::builder()
         .set_default("server.port", 3000)?
         .set_default("server.log_level", "info")?
         .set_default("server.log_format", "compact")?
+        .set_default("server.api_docs", true)?
         .set_default("storage.file_path", "devices.json")?
         .set_default("wol.default_port", 9)?;
+
+    if let Ok(api_docs) = env::var(API_DOCS_ENV) {
+        builder = builder.set_override("server.api_docs", api_docs)?;
+    }
 
     let config = builder
         .add_source(File::with_name(&config_path).required(false))

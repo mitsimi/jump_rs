@@ -31,8 +31,12 @@ pub fn openapi() -> utoipa::openapi::OpenApi {
 /// Creates and configures the API router with all API routes
 pub fn router() -> Router {
     Router::new()
-        .merge(SwaggerUi::new("/api/swagger").url("/api/docs/openapi.json", openapi()))
         .merge(devices::router())
         .merge(wol::router())
         .merge(arp::router())
+}
+
+/// Creates and configures the API documentation router.
+pub fn docs_router() -> Router {
+    Router::new().merge(SwaggerUi::new("/api/swagger").url("/api/docs/openapi.json", openapi()))
 }

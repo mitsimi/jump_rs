@@ -6,6 +6,7 @@
 #   JUMPERS_SERVER_PORT=8080
 #   JUMPERS_SERVER_LOG_LEVEL=debug
 #   JUMPERS_SERVER_LOG_FORMAT=json
+#   JUMPERS_SERVER_API_DOCS=false
 #   JUMPERS_STORAGE_FILE_PATH=/data/devices.json
 #   JUMPERS_WOL_DEFAULT_PORT=7
 #
@@ -20,6 +21,9 @@ log_level = "info"
 
 # Log output format: "compact", "json", or "pretty"
 log_format = "compact"
+
+# Enable Swagger UI and the OpenAPI JSON endpoint
+api_docs = true
 
 [storage]
 # Path to the JSON file storing device data

@@ -42,6 +42,7 @@ pub fn layout(title: &str, body: Markup) -> Markup {
             }
             body {
                 (body)
+                (footer())
             }
         }
     }
@@ -96,6 +97,25 @@ pub fn header() -> Markup {
                     hx-swap="innerHTML" {
                     (icon(Icon::Database))
                     "Import / Export"
+                }
+            }
+        }
+    }
+}
+
+pub fn footer() -> Markup {
+    let api_docs_enabled = crate::config::get().server.api_docs;
+
+    html! {
+        footer class="app-footer" {
+            div class="app-footer__inner" {
+                div class="app-footer__version" {
+                    "jump.rs " (env!("CARGO_PKG_VERSION"))
+                }
+                @if api_docs_enabled {
+                    nav class="app-footer__links" aria-label="Footer links" {
+                        a class="app-footer__link" href="/api/swagger" { "API Docs" }
+                    }
                 }
             }
         }
