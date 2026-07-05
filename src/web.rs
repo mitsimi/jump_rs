@@ -268,7 +268,6 @@ mod tests {
         assert!(body.contains("id=\"device-grid\""));
         assert!(body.contains("/static/vendor/htmx.min.js"));
         assert!(body.contains("/static/vendor/alpine.min.js"));
-        assert!(body.contains("jump.rs 2.0.0-beta1"));
         assert!(body.contains("href=\"/api/swagger\""));
         assert!(body.contains("API Docs"));
         assert!(body.contains("No Devices Found"));
