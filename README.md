@@ -5,7 +5,7 @@ A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 ## Features
 
 - Wake devices on your network via HTTP API
-- Web-based frontend interface
+- Rust-rendered web interface powered by HTMX
 - JSON-based device storage
 - Configurable via file or environment variables
 - Optional OpenTelemetry tracing support
@@ -26,6 +26,9 @@ cargo run
 ```
 
 3. Access the web interface at `http://localhost:3000`
+
+The web UI is served directly by the Rust binary. No separate Node, Vite, or
+frontend build step is required.
 
 ## Configuration
 
@@ -78,17 +81,13 @@ cargo run --features otlp
 Generate OpenAPI specification:
 
 ```bash
-cargo run -- --gen-openapi
+cargo emit-openapi
 ```
 
 or
 
 ```bash
-cargo run gen-openapi
+cargo gen-openapi
 ```
 
-Generate client for frontend based on OpenAPI specification:
-
-```bash
-cd frontend && pnpm gen:openapi
-```
+Swagger UI remains available at `/api/swagger` when the server is running.

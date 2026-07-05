@@ -13,8 +13,6 @@ pub struct Cli {
     gen_openapi: bool,
 }
 
-const FRONTEND_DIR: &str = "./frontend";
-
 impl Cli {
     /// Handle CLI commands that should exit before running the server
     /// Returns true if a command was handled and the program should exit
@@ -39,27 +37,7 @@ impl Cli {
     fn generate_openapi_file() {
         let spec = api::openapi();
         let json = serde_json::to_string_pretty(&spec).unwrap();
-
-        // Determine output directory based on current working directory
-        let output_dir = std::env::current_dir()
-            .ok()
-            .and_then(|cwd| {
-                cwd.file_name()
-                    .map(|name| name.to_string_lossy().to_string())
-            })
-            .map_or_else(
-                || FRONTEND_DIR.to_string(),
-                |dir_name| {
-                    if dir_name == "frontend" {
-                        ".".to_string()
-                    } else {
-                        FRONTEND_DIR.to_string()
-                    }
-                },
-            );
-
-        let output_path = format!("{output_dir}/openapi.json");
-        std::fs::write(&output_path, json).unwrap();
-        println!("Generated OpenAPI spec to: {output_path}");
+        std::fs::write("openapi.json", json).unwrap();
+        println!("Generated OpenAPI spec to: openapi.json");
     }
 }
