@@ -60,7 +60,9 @@ The Docker setup requires special networking configuration for Wake-on-LAN to fu
 
 - **Network Capabilities**: The container needs `NET_RAW` and `NET_ADMIN` capabilities to:
   - Send raw network packets (Wake-on-LAN magic packets)
-  - Perform network operations like MAC address lookups
+  - Perform network operations like ARP-based MAC address lookups
+
+- **MAC Lookup Limitation**: ARP-based MAC lookup requires layer-2 access to the same LAN as the target device. This works when the container runs with host networking on a Linux Docker host. On Docker Desktop, OrbStack, and other macOS/Windows VM-backed Docker runtimes, the container may still be isolated behind a VM network even with `network_mode: host`; in that case Wake-on-LAN can still work, but MAC lookup may not see devices on the host LAN. Run the binary directly on the host for MAC lookup in that environment.
 
 These settings are already configured in the provided `docker-compose.yml` file.
 

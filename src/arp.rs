@@ -1,5 +1,5 @@
 use std::net::Ipv4Addr;
-use std::process::Command;
+use std::process::{Command, Output};
 use thiserror::Error;
 use tracing::{debug, instrument, warn};
 
@@ -11,6 +11,11 @@ pub enum ArpError {
     #[error("Failed to query ARP table: {0}")]
     Query(#[source] std::io::Error),
 
+    #[error(
+        "IP {ip} is not on a directly connected network from this runtime ({route}). MAC lookup requires layer-2 access; Docker Desktop/OrbStack containers usually cannot ARP the host LAN."
+    )]
+    NotDirectlyConnected { ip: String, route: String },
+
     #[error("MAC address not found for IP {0}")]
     NotFound(String),
 }
@@ -20,32 +25,78 @@ pub enum ArpError {
 pub fn lookup_mac(ip: &str) -> Result<String, ArpError> {
     let ip_addr: Ipv4Addr = ip.parse()?;
 
+    ensure_direct_route(ip)?;
+
+    if let Some(mac) = arping_ip(ip_addr)? {
+        return Ok(mac);
+    }
+
     debug!("Pinging IP to populate ARP cache");
     ping_ip(ip_addr).ok();
-
     get_mac_from_arp(ip)
+}
+
+fn ensure_direct_route(ip: &str) -> Result<(), ArpError> {
+    let Some(output) = run_command("ip", &["route", "get", ip])? else {
+        return Ok(());
+    };
+
+    if !output.status.success() {
+        log_command_failure("ip route get", &output);
+        return Ok(());
+    }
+
+    let route = String::from_utf8_lossy(&output.stdout);
+    let route = route.lines().next().unwrap_or_default().trim();
+    if is_indirect_route(route) {
+        warn!(route = %route, "Target IP is not directly reachable for ARP lookup");
+        return Err(ArpError::NotDirectlyConnected {
+            ip: ip.to_string(),
+            route: route.to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+#[instrument(skip_all)]
+fn arping_ip(ip: Ipv4Addr) -> Result<Option<String>, ArpError> {
+    debug!("Sending ARP probe");
+    let ip = ip.to_string();
+    let args = ["-c", "1", "-w", "1", "-f", ip.as_str()];
+    let Some(output) = run_command("arping", &args)? else {
+        debug!("arping command not available");
+        return Ok(None);
+    };
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    if let Some(mac) = parse_arping_output(&stdout, &ip) {
+        debug!(mac = %mac, "MAC address found via arping");
+        return Ok(Some(mac));
+    }
+
+    if !output.status.success() {
+        log_command_failure("arping", &output);
+    }
+
+    Ok(None)
 }
 
 #[instrument(skip_all)]
 fn ping_ip(ip: Ipv4Addr) -> Result<(), ArpError> {
-    let output = Command::new("ping")
-        .args(["-c", "1", "-W", "1", ip.to_string().as_str()])
-        .output();
+    let ip = ip.to_string();
+    let Some(output) = run_command("ping", &["-c", "1", "-W", "1", ip.as_str()])? else {
+        debug!("ping command not available");
+        return Ok(());
+    };
 
-    match output {
-        Ok(result) => {
-            if result.status.success() {
-                debug!("Ping successful");
-            } else {
-                debug!("Ping failed (host may be unreachable)");
-            }
-            Ok(())
-        }
-        Err(e) => {
-            warn!(error = %e, "Ping command failed to execute");
-            Ok(())
-        }
+    if output.status.success() {
+        debug!("Ping successful");
+    } else {
+        debug!("Ping failed (host may be unreachable)");
+        log_command_failure("ping", &output);
     }
+    Ok(())
 }
 
 #[instrument(skip_all)]
@@ -68,10 +119,9 @@ fn get_mac_from_arp(ip: &str) -> Result<String, ArpError> {
 }
 
 fn query_arp<const N: usize>(args: [&str; N], ip: &str) -> Result<Option<String>, ArpError> {
-    let output = Command::new("arp")
-        .args(args)
-        .output()
-        .map_err(ArpError::Query)?;
+    let Some(output) = run_command("arp", &args)? else {
+        return Ok(None);
+    };
     let output_str = String::from_utf8_lossy(&output.stdout);
 
     if let Some(mac) = parse_arp_output(&output_str, ip) {
@@ -79,14 +129,16 @@ fn query_arp<const N: usize>(args: [&str; N], ip: &str) -> Result<Option<String>
         return Ok(Some(mac));
     }
 
+    if !output.status.success() {
+        log_command_failure("arp", &output);
+    }
+
     Ok(None)
 }
 
 fn query_ip_neighbor(ip: &str) -> Result<Option<String>, ArpError> {
-    let output = match Command::new("ip").args(["neigh", "show", ip]).output() {
-        Ok(output) => output,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(None),
-        Err(err) => return Err(ArpError::Query(err)),
+    let Some(output) = run_command("ip", &["neigh", "show", ip])? else {
+        return Ok(None);
     };
     let output_str = String::from_utf8_lossy(&output.stdout);
 
@@ -95,7 +147,49 @@ fn query_ip_neighbor(ip: &str) -> Result<Option<String>, ArpError> {
         return Ok(Some(mac));
     }
 
+    if !output.status.success() {
+        log_command_failure("ip neigh show", &output);
+    }
+
     Ok(None)
+}
+
+fn run_command(command: &str, args: &[&str]) -> Result<Option<Output>, ArpError> {
+    match Command::new(command).args(args).output() {
+        Ok(output) => Ok(Some(output)),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(ArpError::Query(err)),
+    }
+}
+
+fn log_command_failure(command: &str, output: &Output) {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    debug!(
+        command = command,
+        status = %output.status,
+        stderr = %stderr.trim(),
+        stdout = %stdout.trim(),
+        "ARP helper command did not return a usable result"
+    );
+}
+
+fn is_indirect_route(route: &str) -> bool {
+    route.split_whitespace().any(|field| field == "via")
+}
+
+fn parse_arping_output(output: &str, ip: &str) -> Option<String> {
+    output
+        .lines()
+        .find(|line| line.contains(ip))
+        .and_then(parse_bracketed_mac)
+}
+
+fn parse_bracketed_mac(line: &str) -> Option<String> {
+    let start = line.find('[')?;
+    let rest = line.get(start + 1..)?;
+    let end = rest.find(']')?;
+    normalize_mac(rest.get(..end)?)
 }
 
 fn parse_arp_output(output: &str, ip: &str) -> Option<String> {
@@ -238,5 +332,32 @@ Address                  HWtype  HWaddress           Flags Mask            Iface
     fn ignores_ip_neighbor_entry_without_mac() {
         let output = "192.168.0.20 dev eth0 FAILED";
         assert_eq!(parse_ip_neighbor_output(output, "192.168.0.20"), None);
+    }
+
+    #[test]
+    fn parse_arping_reply() {
+        let output = "Unicast reply from 192.168.0.20 [10:ff:e0:6b:65:3b]  1.123ms";
+        assert_eq!(
+            parse_arping_output(output, "192.168.0.20").as_deref(),
+            Some("10:FF:E0:6B:65:3B")
+        );
+    }
+
+    #[test]
+    fn ignores_arping_reply_for_other_ip() {
+        let output = "Unicast reply from 192.168.0.1 [10:ff:e0:6b:65:3b]  1.123ms";
+        assert_eq!(parse_arping_output(output, "192.168.0.20"), None);
+    }
+
+    #[test]
+    fn detects_indirect_route() {
+        let route = "192.168.0.20 via 192.168.139.1 dev eth0 src 192.168.139.2 uid 1000";
+        assert!(is_indirect_route(route));
+    }
+
+    #[test]
+    fn accepts_direct_route() {
+        let route = "192.168.0.20 dev eth0 src 192.168.0.10 uid 1000";
+        assert!(!is_indirect_route(route));
     }
 }
