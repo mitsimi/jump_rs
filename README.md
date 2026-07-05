@@ -91,3 +91,23 @@ cargo gen-openapi
 ```
 
 Swagger UI remains available at `/api/swagger` when the server is running.
+
+Update vendored HTMX and Alpine bundles:
+
+```bash
+scripts/update-vendor-js.py
+```
+
+The updater downloads the browser bundles from the published npm tarballs and
+updates `static/vendor/manifest.json` with version, source, and checksum data.
+Specific versions can be pinned when needed:
+
+```bash
+scripts/update-vendor-js.py --htmx 2.0.10 --alpine 3.15.12
+```
+
+Use check mode to fail when vendored assets are behind the requested versions:
+
+```bash
+scripts/update-vendor-js.py --check
+```

@@ -1,0 +1,25 @@
+{
+  "assets": {
+    "alpine": {
+      "destination": "static/vendor/alpine.min.js",
+      "integrity": "sha512-nJvPAQVNPdZZ0NrExJ/kzQco3ijR8LwvCOadQecllESiqT4NyZ/57sN9V2XyvhlBGAbmlKYgeWZvYdKq99ij/Q==",
+      "package": "alpinejs",
+      "package_file": "dist/cdn.min.js",
+      "sha256": "57b37d7cae9a27d965fdae4adcc844245dfdc407e655aee85dcfff3a08036a3f",
+      "sri": "sha384-pb6hrQvo4s23cEUFtj0CZkzGE3jyK3pj26RIupXXxhSrrcUA/Cn0lZgcCrGH0t6L",
+      "tarball": "https://registry.npmjs.org/alpinejs/-/alpinejs-3.15.12.tgz",
+      "version": "3.15.12"
+    },
+    "htmx": {
+      "destination": "static/vendor/htmx.min.js",
+      "integrity": "sha512-kdeJe7ZVwaS6QMz/ebBIVtZdpwen6L0OQ5GOhPV9MKBb196TCZeZu4yA7ZIQsaLKv7EpXz+So7KSXNuHXhj7Cw==",
+      "package": "htmx.org",
+      "package_file": "dist/htmx.min.js",
+      "sha256": "71ea67185bfa8c98c39d31717c6fce5d852370fcdfd129db4543774d3145c0de",
+      "sri": "sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V",
+      "tarball": "https://registry.npmjs.org/htmx.org/-/htmx.org-2.0.10.tgz",
+      "version": "2.0.10"
+    }
+  },
+  "schema": 1
+}
