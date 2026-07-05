@@ -50,8 +50,8 @@ jobs:
   build-amd64:
     name: Build AMD64
     runs-on: ubuntu-latest
-    needs: validate-version
-    if: always() && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
+    needs: [test, validate-version]
+    if: always() && needs.test.result == 'success' && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
     permissions:
       contents: read
       packages: write
@@ -101,8 +101,8 @@ jobs:
   build-arm64:
     name: Build ARM64
     runs-on: ubuntu-24.04-arm
-    needs: validate-version
-    if: always() && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
+    needs: [test, validate-version]
+    if: always() && needs.test.result == 'success' && (needs.validate-version.result == 'success' || needs.validate-version.result == 'skipped')
     permissions:
       contents: read
       packages: write
@@ -175,10 +175,10 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
-            type=semver,pattern={{major}},enable=${{ !contains(github.ref_name, '-') }}
-            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+            type=semver,pattern={{version}},enable=${{ github.ref_name != 'latest' }}
+            type=semver,pattern={{major}}.{{minor}},enable=${{ github.ref_name != 'latest' && !contains(github.ref_name, '-') }}
+            type=semver,pattern={{major}},enable=${{ github.ref_name != 'latest' && !contains(github.ref_name, '-') }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'latest' || !contains(github.ref_name, '-') }}
 
       - name: Create and push manifest
         run: |
