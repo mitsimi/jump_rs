@@ -36,7 +36,7 @@ pub enum ApiError {
 }
 
 impl ApiError {
-    const fn status_code(&self) -> StatusCode {
+    pub const fn status_code(&self) -> StatusCode {
         match self {
             Self::Validation(_) => StatusCode::BAD_REQUEST,
 
@@ -52,7 +52,9 @@ impl ApiError {
 
             Self::Arp(e) => match e {
                 ArpError::InvalidIp(_) => StatusCode::BAD_REQUEST,
-                ArpError::NotFound(_) => StatusCode::NOT_FOUND,
+                ArpError::NotDirectlyConnected { .. } | ArpError::NotFound(_) => {
+                    StatusCode::NOT_FOUND
+                }
                 ArpError::Query(_) => StatusCode::INTERNAL_SERVER_ERROR,
             },
         }
@@ -128,6 +130,15 @@ impl ApiError {
                         error_type = "arp_not_found",
                         status_code = status_code,
                         ip = %ip,
+                        "Request failed"
+                    );
+                }
+                ArpError::NotDirectlyConnected { ip, route } => {
+                    warn!(
+                        error_type = "arp_not_directly_connected",
+                        status_code = status_code,
+                        ip = %ip,
+                        route = %route,
                         "Request failed"
                     );
                 }

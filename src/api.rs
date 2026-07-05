@@ -1,5 +1,5 @@
 mod arp;
-mod devices;
+pub mod devices;
 mod wol;
 
 use crate::error::ApiError;

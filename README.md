@@ -5,7 +5,7 @@ A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 ## Features
 
 - Wake devices on your network via HTTP API
-- Web-based frontend interface
+- Rust-rendered web interface powered by HTMX
 - JSON-based device storage
 - Configurable via file or environment variables
 - Optional OpenTelemetry tracing support
@@ -26,6 +26,9 @@ cargo run
 ```
 
 3. Access the web interface at `http://localhost:3000`
+
+The web UI is served directly by the Rust binary. No separate Node, Vite, or
+frontend build step is required.
 
 ## Configuration
 
@@ -57,7 +60,9 @@ The Docker setup requires special networking configuration for Wake-on-LAN to fu
 
 - **Network Capabilities**: The container needs `NET_RAW` and `NET_ADMIN` capabilities to:
   - Send raw network packets (Wake-on-LAN magic packets)
-  - Perform network operations like MAC address lookups
+  - Perform network operations like ARP-based MAC address lookups
+
+- **MAC Lookup Limitation**: ARP-based MAC lookup requires layer-2 access to the same LAN as the target device. This works when the container runs with host networking on a Linux Docker host. On Docker Desktop, OrbStack, and other macOS/Windows VM-backed Docker runtimes, the container may still be isolated behind a VM network even with `network_mode: host`; in that case Wake-on-LAN can still work, but MAC lookup may not see devices on the host LAN. Run the binary directly on the host for MAC lookup in that environment.
 
 These settings are already configured in the provided `docker-compose.yml` file.
 
@@ -78,17 +83,33 @@ cargo run --features otlp
 Generate OpenAPI specification:
 
 ```bash
-cargo run -- --gen-openapi
+cargo emit-openapi
 ```
 
 or
 
 ```bash
-cargo run gen-openapi
+cargo gen-openapi
 ```
 
-Generate client for frontend based on OpenAPI specification:
+Swagger UI remains available at `/api/swagger` when the server is running.
+
+Update vendored HTMX and Alpine bundles:
 
 ```bash
-cd frontend && pnpm gen:openapi
+scripts/update-vendor-js.py
+```
+
+The updater downloads the browser bundles from the published npm tarballs and
+updates `static/vendor/manifest.json` with version, source, and checksum data.
+Specific versions can be pinned when needed:
+
+```bash
+scripts/update-vendor-js.py --htmx 2.0.10 --alpine 3.15.12
+```
+
+Use check mode to fail when vendored assets are behind the requested versions:
+
+```bash
+scripts/update-vendor-js.py --check
 ```
