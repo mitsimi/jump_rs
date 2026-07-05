@@ -4,10 +4,9 @@ use thiserror::Error;
 use tracing::{error, warn};
 use utoipa::ToSchema;
 
-use crate::arp::ArpError;
+use crate::devices::{ArpError, WolError};
 use crate::models::ValidationError;
 use crate::storage::StorageError;
-use crate::wol::WolError;
 
 /// Standard error response returned by all API endpoints
 #[derive(Debug, Serialize, ToSchema)]

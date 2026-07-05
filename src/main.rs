@@ -2,7 +2,6 @@
 
 mod api;
 mod app;
-mod arp;
 mod cli;
 mod config;
 mod devices;
@@ -11,7 +10,6 @@ mod logging;
 mod models;
 mod storage;
 mod web;
-mod wol;
 
 use crate::app::build_service;
 use crate::cli::Cli;

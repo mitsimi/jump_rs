@@ -1,3 +1,9 @@
+mod arp;
+mod wol;
+
+pub use arp::ArpError;
+pub use wol::WolError;
+
 use crate::api::ApiResult;
 use crate::api::devices::{
     CreateDeviceRequest, ExportResponse, ImportRequest, UpdateDeviceRequest,
@@ -96,10 +102,10 @@ pub fn wake_device(storage: &SharedStorage, id: &str) -> ApiResult<()> {
         .get(id)
         .ok_or_else(|| StorageError::NotFound(id.to_string()))?;
 
-    crate::wol::send_wol_packet(&device)?;
+    wol::send_wol_packet(&device)?;
     Ok(())
 }
 
 pub fn arp_lookup(ip: &str) -> ApiResult<String> {
-    Ok(crate::arp::lookup_mac(ip)?)
+    Ok(arp::lookup_mac(ip)?)
 }

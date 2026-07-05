@@ -15,7 +15,7 @@ use axum::{
 };
 
 use crate::{
-    arp::ArpError,
+    devices::ArpError,
     error::ApiError,
     storage::SharedStorage,
     web::{
