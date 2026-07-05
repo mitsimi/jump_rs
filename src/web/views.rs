@@ -41,8 +41,12 @@ pub fn layout(title: &str, body: Markup) -> Markup {
                 script src="/static/app.js" defer {}
             }
             body {
-                (body)
-                (footer())
+                div class="container" {
+                    (body)
+                    (footer())
+                }
+                div id="modal-root" {}
+                div id="toast-root" class="toast__container" {}
             }
         }
     }
@@ -52,12 +56,8 @@ pub fn home_page(devices: &[Device]) -> Markup {
     layout(
         "Jumpers",
         html! {
-            div class="container" {
-                (header())
-                (device_grid(devices))
-            }
-            div id="modal-root" {}
-            div id="toast-root" class="toast__container" {}
+            (header())
+            (device_grid(devices))
         },
     )
 }
@@ -66,13 +66,11 @@ pub fn error_page(status: StatusCode, message: &str) -> Markup {
     layout(
         "Jumpers Error",
         html! {
-            div class="container" {
-                (header())
-                section class="empty-grid" {
-                    div class="empty-banner" {
-                        div class="empty-title" { "Request Failed" }
-                        div class="empty-text" { (status.as_u16()) " " (message) }
-                    }
+            (header())
+            section class="empty-grid" {
+                div class="empty-banner" {
+                    div class="empty-title" { "Request Failed" }
+                    div class="empty-text" { (status.as_u16()) " " (message) }
                 }
             }
         },
