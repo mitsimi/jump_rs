@@ -3,6 +3,12 @@ name = "jump_rs"
 version = "2.0.2"
 edition = "2024"
 description = "Wake-on-LAN web server"
+license = "MIT"
+repository = "https://github.com/mitsimi/jump_rs"
+homepage = "https://github.com/mitsimi/jump_rs"
+readme = "README.md"
+keywords = ["wake-on-lan", "wol", "server"]
+categories = ["command-line-utilities", "web-programming::http-server"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
