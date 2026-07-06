@@ -13,7 +13,7 @@ RUN cargo build --release
 
 FROM alpine:3.23 AS runtime
 
-RUN apk add --no-cache libstdc++ openssl ca-certificates iputils net-tools iproute2
+RUN apk add --no-cache iputils-arping iputils-ping iproute2-minimal net-tools
 
 RUN addgroup -g 1000 app && adduser -u 1000 -G app -s /bin/sh -D app
 
