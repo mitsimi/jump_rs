@@ -208,7 +208,7 @@ async fn export_devices(Extension(storage): Extension<SharedStorage>) -> Respons
 fn device_form_error(device: Option<&crate::models::Device>, message: &str) -> Response {
     (
         StatusCode::BAD_REQUEST,
-        [("HX-Retarget", "#modal-root")],
+        [("HX-Retarget", "#modal-root"), ("HX-Reswap", "innerHTML")],
         views::device_modal(device, Some(message)),
     )
         .into_response()
@@ -217,7 +217,7 @@ fn device_form_error(device: Option<&crate::models::Device>, message: &str) -> R
 fn transfer_error(message: &str) -> Response {
     (
         StatusCode::BAD_REQUEST,
-        [("HX-Retarget", "#modal-root")],
+        [("HX-Retarget", "#modal-root"), ("HX-Reswap", "innerHTML")],
         views::transfer_modal(Some(message)),
     )
         .into_response()
@@ -304,9 +304,42 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.headers().get("HX-Retarget").unwrap(), "#modal-root");
+        assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
         assert!(storage.get_all().is_empty());
         let body = response_text(response).await;
         assert!(body.contains("Invalid MAC address format"));
+    }
+
+    #[tokio::test]
+    async fn update_device_validation_error_keeps_modal_root_closable() {
+        let (app, storage, _dir) = app();
+        let device = crate::models::Device::new(
+            "Gaming PC".to_string(),
+            "AA:BB:CC:DD:EE:FF".to_string(),
+            None,
+            9,
+            None,
+        )
+        .unwrap();
+        let id = device.id.clone();
+        storage.add(device).unwrap();
+
+        let response = app
+            .oneshot(form_request(
+                &format!("/devices/{id}/update"),
+                "name=Gaming%20PC&mac_address=bad&port=9",
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(response.headers().get("HX-Retarget").unwrap(), "#modal-root");
+        assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
+        assert_eq!(storage.get(&id).unwrap().mac_address, "AA:BB:CC:DD:EE:FF");
+        let body = response_text(response).await;
+        assert!(body.contains("Invalid MAC address format"));
+        assert!(body.contains("Edit Device"));
     }
 
     #[tokio::test]
