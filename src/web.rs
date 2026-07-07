@@ -304,7 +304,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        assert_eq!(response.headers().get("HX-Retarget").unwrap(), "#modal-root");
+        assert_eq!(
+            response.headers().get("HX-Retarget").unwrap(),
+            "#modal-root"
+        );
         assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
         assert!(storage.get_all().is_empty());
         let body = response_text(response).await;
@@ -334,7 +337,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        assert_eq!(response.headers().get("HX-Retarget").unwrap(), "#modal-root");
+        assert_eq!(
+            response.headers().get("HX-Retarget").unwrap(),
+            "#modal-root"
+        );
         assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
         assert_eq!(storage.get(&id).unwrap().mac_address, "AA:BB:CC:DD:EE:FF");
         let body = response_text(response).await;
