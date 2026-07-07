@@ -1,6 +1,6 @@
 [package]
 name = "jump_rs"
-version = "2.0.2"
+version = "2.0.3"
 edition = "2024"
 description = "Wake-on-LAN web server"
 license = "MIT"
