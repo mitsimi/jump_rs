@@ -21,8 +21,7 @@
 
 @font-face {
     font-family: "Space Mono";
-    src: url("/static/fonts/Space_Mono/SpaceMono-Regular.woff2")
-        format("woff2");
+    src: url("/static/fonts/Space_Mono/SpaceMono-Regular.woff2") format("woff2");
     font-weight: 400;
     font-style: normal;
     font-display: swap;
@@ -492,6 +491,7 @@ body::after {
     background: var(--bg-tertiary);
     color: var(--text-muted);
     font-size: 0.625rem;
+    font-variant-numeric: tabular-nums;
 }
 
 .device-card__info {
@@ -521,6 +521,7 @@ body::after {
     font-size: 0.875rem;
     letter-spacing: 0.05em;
     overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
 }
 
 .device-card__value--mac {
@@ -1176,18 +1177,18 @@ body::after {
 
 @media (max-width: 768px) {
     .container {
-        padding: 40px 20px 28px;
+        padding: 28px 20px 28px;
     }
 
-    .app-footer__inner {
-        flex-direction: column;
-        align-items: flex-start;
-        padding-top: 16px;
+    .app-footer {
+        color: var(--text-secondary);
     }
 
     .app-header {
         flex-direction: column;
         gap: 24px;
+        margin-bottom: 24px;
+        padding-bottom: 24px;
     }
 
     .app-header__title {
@@ -1199,6 +1200,11 @@ body::after {
         justify-content: space-between;
     }
 
+    .app-header__data-btn {
+        min-height: 44px;
+        padding: 12px 16px;
+    }
+
     .device-grid__header {
         flex-direction: column;
         align-items: flex-start;
@@ -1207,12 +1213,65 @@ body::after {
 
     .device-grid__add-btn {
         width: 100%;
+        min-height: 44px;
         justify-content: center;
     }
 
     .device-grid__grid,
     .device-grid__empty-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .device-grid__section {
+        margin-bottom: 40px;
+    }
+
+    .device-card {
+        padding: 20px;
+    }
+
+    .device-card__header {
+        margin-bottom: 16px;
+    }
+
+    .device-card__id {
+        color: var(--text-secondary);
+        font-size: 0.6875rem;
+    }
+
+    .device-card__info {
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .device-card__label {
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+    }
+
+    .device-card__actions {
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .device-card__actions .btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .device-card__actions .btn-primary {
+        flex: 1;
+    }
+
+    .device-card__actions .btn-secondary,
+    .device-card__actions .device-card__icon-action {
+        width: 44px;
+        padding: 0;
+    }
+
+    .device-card__action-label {
+        display: none;
     }
 
     .device-grid__empty-banner {

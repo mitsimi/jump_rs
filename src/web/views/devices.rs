@@ -95,19 +95,23 @@ fn device_card(device: &Device) -> Markup {
                     type="button"
                     hx-get={ "/devices/" (device.id) "/edit" }
                     hx-target="#modal-root"
-                    hx-swap="innerHTML" {
+                    hx-swap="innerHTML"
+                    aria-label="Edit device"
+                    title="Edit device" {
                     (icon(Icon::Pencil))
-                    "Edit"
+                    span class="device-card__action-label" { "Edit" }
                 }
                 button
-                    class="btn btn-danger"
+                    class="btn btn-danger device-card__icon-action"
                     type="button"
                     hx-post={ "/devices/" (device.id) "/delete" }
                     hx-target="#device-grid"
                     hx-swap="outerHTML"
-                    hx-confirm={ "Remove " (device.name) "?" } {
+                    hx-confirm={ "Remove " (device.name) "?" }
+                    aria-label="Remove device"
+                    title="Remove device" {
                     (icon(Icon::Trash2))
-                    "Remove"
+                    span class="device-card__action-label" { "Remove" }
                 }
             }
         }
