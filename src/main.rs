@@ -2,6 +2,7 @@
 
 mod api;
 mod app;
+mod auth;
 mod cli;
 mod config;
 mod devices;
@@ -35,6 +36,11 @@ async fn main() {
             std::process::exit(1);
         }
     };
+
+    if let Err(err) = auth::validate_config(&config.auth) {
+        eprintln!("Invalid authentication configuration: {err}");
+        std::process::exit(1);
+    }
 
     logging::init();
     info!(version = env!("CARGO_PKG_VERSION"), "Starting jump.rs");

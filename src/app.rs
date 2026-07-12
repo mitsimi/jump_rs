@@ -10,6 +10,7 @@ use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 use crate::api;
+use crate::auth;
 use crate::storage::SharedStorage;
 use crate::web;
 
@@ -19,14 +20,26 @@ pub fn build_app(storage: SharedStorage) -> Router {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    let mut router = Router::new()
-        .merge(web::router())
-        .merge(api::router())
-        .nest_service("/static", ServeDir::new("static"));
+    let mut protected = Router::new().merge(web::router()).merge(api::router());
 
     if crate::config::get().server.api_docs {
-        router = router.merge(api::docs_router());
+        protected = protected.merge(api::docs_router());
     }
+
+    let auth_state = auth::AuthState::from_config(&crate::config::get().auth)
+        .expect("authentication configuration should be valid");
+
+    let router = if auth_state.is_enabled() {
+        Router::new()
+            .merge(auth::public_router(auth_state.clone()))
+            .merge(protected.route_layer(axum::middleware::from_fn_with_state(
+                auth_state,
+                auth::require_authentication,
+            )))
+    } else {
+        protected
+    }
+    .nest_service("/static", ServeDir::new("static"));
 
     router
         .layer(Extension(storage))

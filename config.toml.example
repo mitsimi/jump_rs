@@ -7,6 +7,9 @@
 #   JUMPERS_SERVER_LOG_LEVEL=debug
 #   JUMPERS_SERVER_LOG_FORMAT=json
 #   JUMPERS_SERVER_API_DOCS=false
+#   JUMPERS_AUTH_ENABLED=true
+#   JUMPERS_AUTH_USERS='admin:$2b$12$...'
+#   JUMPERS_AUTH_SECURE_COOKIE=true
 #   JUMPERS_STORAGE_FILE_PATH=/data/devices.json
 #   JUMPERS_WOL_DEFAULT_PORT=7
 #
@@ -24,6 +27,20 @@ log_format = "compact"
 
 # Enable Swagger UI and the OpenAPI JSON endpoint
 api_docs = true
+
+[auth]
+# Opt in to Jumpers' built-in login. Leave disabled when using forward auth.
+enabled = false
+
+# Comma-separated bcrypt users in TinyAuth-compatible username:password_hash format.
+# Escape dollar signs as $$ when this value is interpolated by Docker Compose.
+users = ""
+
+# Enable this when Jumpers is served over HTTPS (including behind a TLS proxy).
+secure_cookie = false
+
+# Idle sessions are not extended. The default is 24 hours.
+session_expiry_seconds = 86400
 
 [storage]
 # Path to the JSON file storing device data

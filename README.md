@@ -9,6 +9,7 @@ A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 - JSON-based device storage
 - Configurable via file or environment variables
 - Configurable structured request logging
+- Optional built-in username/password authentication
 - Docker support included
 
 ## Quick Start
@@ -41,6 +42,48 @@ JUMPERS_SERVER_PORT=8080
 JUMPERS_SERVER_LOG_LEVEL=debug
 JUMPERS_STORAGE_FILE_PATH=/data/devices.json
 ```
+
+### Authentication
+
+Built-in authentication is opt-in. Define one or more users as a comma-separated
+list of `username:password_hash` entries using bcrypt hashes, matching TinyAuth's
+user format:
+
+```toml
+[auth]
+enabled = true
+users = "admin:$2b$12$..."
+secure_cookie = true
+```
+
+Or configure the same values through the environment:
+
+```bash
+JUMPERS_AUTH_ENABLED=true
+JUMPERS_AUTH_USERS='admin:$2b$12$...'
+JUMPERS_AUTH_SECURE_COOKIE=true
+```
+
+Use TinyAuth's `user create` command or another bcrypt password-hash generator.
+When Docker Compose interpolates the value, escape each `$` in the hash as `$$`.
+Set `secure_cookie = true` whenever users access Jumpers over HTTPS.
+
+Automation can authenticate to API routes with HTTP Basic authentication using
+the same configured user credentials:
+
+```bash
+curl --user admin:your-password http://localhost:3000/api/devices
+```
+
+Basic authentication is accepted only for `/api/*`; it does not bypass the web
+login. Always use HTTPS when sending credentials over a network because Basic
+authentication encodes credentials but does not encrypt them.
+
+If authentication is disabled (the default), Jumpers does not inspect or require
+forward-auth headers. A reverse proxy can therefore protect the whole app using
+TinyAuth, Authelia, Authentik, or another forward-auth provider without any
+additional Jumpers configuration. Do not expose an unprotected route around the
+proxy when relying on forward auth.
 
 See `config.toml.example` for all available options.
 
