@@ -3,7 +3,8 @@ use thiserror::Error;
 use tracing::{debug, info, instrument};
 
 use crate::models::Device;
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -55,32 +56,66 @@ impl DeviceStorage {
     }
 
     #[instrument(skip_all, fields(path = %self.path))]
-    pub fn save(&self) -> Result<(), StorageError> {
-        let content = serde_json::to_string_pretty(&self.devices)?;
+    fn save_devices(&self, devices: &[Device]) -> Result<(), StorageError> {
+        let content = serde_json::to_vec_pretty(devices)?;
+        let path = Path::new(&self.path);
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| std::io::Error::other("storage path has no valid file name"))?;
+        let temporary_path = parent.join(format!(".{file_name}.{}.tmp", nanoid::nanoid!(10)));
 
-        fs::write(&self.path, content)?;
-        debug!(device_count = self.devices.len(), "Storage saved");
+        let write_result = (|| -> Result<(), std::io::Error> {
+            let mut temporary = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temporary_path)?;
+            temporary.write_all(&content)?;
+            temporary.sync_all()?;
+            fs::rename(&temporary_path, path)?;
+
+            #[cfg(unix)]
+            OpenOptions::new().read(true).open(parent)?.sync_all()?;
+
+            Ok(())
+        })();
+
+        if write_result.is_err() {
+            let _ = fs::remove_file(&temporary_path);
+        }
+        write_result?;
+
+        debug!(device_count = devices.len(), "Storage saved");
         Ok(())
     }
 
     #[instrument(skip_all)]
     pub fn add(&mut self, device: Device) -> Result<(), StorageError> {
-        self.devices.push(device);
-        self.save()
+        let mut devices = self.devices.clone();
+        devices.push(device);
+        self.save_devices(&devices)?;
+        self.devices = devices;
+        Ok(())
     }
 
     #[instrument(skip_all)]
     pub fn add_all(&mut self, devices: Vec<Device>) -> Result<(), StorageError> {
-        self.devices.extend(devices);
-        self.save()
+        let mut updated = self.devices.clone();
+        updated.extend(devices);
+        self.save_devices(&updated)?;
+        self.devices = updated;
+        Ok(())
     }
 
     #[instrument(skip_all)]
     pub fn remove(&mut self, id: &str) -> Result<Device, StorageError> {
         let index = self.devices.iter().position(|d| d.id == id);
         if let Some(i) = index {
-            let device = self.devices.remove(i);
-            self.save()?;
+            let mut devices = self.devices.clone();
+            let device = devices.remove(i);
+            self.save_devices(&devices)?;
+            self.devices = devices;
             debug!("Device removed from storage");
             Ok(device)
         } else {
@@ -93,13 +128,16 @@ impl DeviceStorage {
     pub fn update(&mut self, id: &str, device: Device) -> Result<Device, StorageError> {
         let index = self.devices.iter().position(|d| d.id == id);
         if let Some(i) = index {
-            self.devices[i] = Device {
-                id: self.devices[i].id.clone(),
+            let mut devices = self.devices.clone();
+            devices[i] = Device {
+                id: devices[i].id.clone(),
                 ..device
             };
-            self.save()?;
+            self.save_devices(&devices)?;
+            let updated = devices[i].clone();
+            self.devices = devices;
             debug!("Device updated in storage");
-            Ok(self.devices.get(i).cloned().unwrap())
+            Ok(updated)
         } else {
             debug!("Device not found in storage");
             Err(StorageError::NotFound(id.to_string()))
@@ -191,6 +229,15 @@ mod tests {
         storage.add(device).unwrap();
 
         assert_eq!(storage.devices.len(), 1);
+    }
+
+    #[test]
+    fn failed_save_does_not_mutate_in_memory_devices() {
+        let dir = TempDir::new().unwrap();
+        let mut storage = DeviceStorage::new(dir.path().to_str().unwrap());
+
+        assert!(storage.add(create_test_device("Device 1")).is_err());
+        assert!(storage.devices.is_empty());
     }
 
     #[test]
