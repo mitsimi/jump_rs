@@ -76,6 +76,11 @@ fn header() -> Markup {
                     (icon(Icon::Database))
                     "Import / Export"
                 }
+                @if crate::config::get().auth.enabled {
+                    form method="post" action="/logout" {
+                        button class="app-header__data-btn" type="submit" { "Sign out" }
+                    }
+                }
             }
         }
     }

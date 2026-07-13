@@ -13,8 +13,29 @@ static CONFIG: OnceLock<AppConfig> = OnceLock::new();
 #[serde(default)]
 pub struct AppConfig {
     pub server: ServerConfig,
+    pub auth: AuthConfig,
     pub storage: StorageConfig,
     pub wol: WolConfig,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct AuthConfig {
+    pub enabled: bool,
+    pub users: String,
+    pub secure_cookie: bool,
+    pub session_expiry_seconds: u64,
+}
+
+impl Default for AuthConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            users: String::new(),
+            secure_cookie: false,
+            session_expiry_seconds: 86_400,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
