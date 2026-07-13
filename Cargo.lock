@@ -733,7 +733,7 @@ dependencies = [
 
 [[package]]
 name = "jump_rs"
-version = "2.0.3"
+version = "2.1.0-beta.1"
 dependencies = [
  "axum",
  "axum-extra",
