@@ -2,7 +2,6 @@ use axum::Extension;
 use axum::{Router, http::Request, response::Response};
 use std::time::Duration;
 use tower_http::classify::ServerErrorsFailureClass;
-use tower_http::cors::{Any, CorsLayer};
 use tower_http::request_id::RequestId;
 use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::services::ServeDir;
@@ -15,11 +14,6 @@ use crate::storage::SharedStorage;
 use crate::web;
 
 pub fn build_app(storage: SharedStorage, auth_state: Option<auth::AuthState>) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
     let mut protected = Router::new().merge(web::router()).merge(api::router());
 
     if crate::config::get().server.api_docs {
@@ -40,7 +34,6 @@ pub fn build_app(storage: SharedStorage, auth_state: Option<auth::AuthState>) ->
 
     router
         .layer(Extension(storage))
-        .layer(cors)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<axum::body::Body>| {
