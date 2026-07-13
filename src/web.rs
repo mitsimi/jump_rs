@@ -238,7 +238,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("devices.json");
         let storage = SharedStorage::load(path.to_str().unwrap()).unwrap();
-        (crate::app::build_service(storage.clone()), storage, dir)
+        (crate::app::build_app(storage.clone(), None), storage, dir)
     }
 
     async fn response_text(response: Response) -> String {

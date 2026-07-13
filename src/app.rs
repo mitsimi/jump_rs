@@ -14,7 +14,7 @@ use crate::auth;
 use crate::storage::SharedStorage;
 use crate::web;
 
-pub fn build_app(storage: SharedStorage) -> Router {
+pub fn build_app(storage: SharedStorage, auth_state: Option<auth::AuthState>) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -26,10 +26,7 @@ pub fn build_app(storage: SharedStorage) -> Router {
         protected = protected.merge(api::docs_router());
     }
 
-    let auth_state = auth::AuthState::from_config(&crate::config::get().auth)
-        .expect("authentication configuration should be valid");
-
-    let router = if auth_state.is_enabled() {
+    let router = if let Some(auth_state) = auth_state {
         Router::new()
             .merge(auth::public_router(auth_state.clone()))
             .merge(protected.route_layer(axum::middleware::from_fn_with_state(
@@ -83,8 +80,4 @@ pub fn build_app(storage: SharedStorage) -> Router {
         )
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
-}
-
-pub fn build_service(storage: SharedStorage) -> Router {
-    build_app(storage)
 }

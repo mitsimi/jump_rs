@@ -30,11 +30,11 @@ const DUMMY_PASSWORD_HASH: &str = "$2b$12$UdLYoJ5lgPsC0RKqYH/jMua7zIn0g9kPqWmhYa
 pub struct AuthState(Arc<AuthStateInner>);
 
 struct AuthStateInner {
-    enabled: bool,
     users: HashMap<String, String>,
     sessions: Mutex<HashMap<String, Session>>,
     secure_cookie: bool,
-    session_expiry: Duration,
+    session_expiry: std::time::Duration,
+    session_cookie_max_age: time::Duration,
 }
 
 struct Session {
@@ -43,26 +43,32 @@ struct Session {
 }
 
 impl AuthState {
-    pub fn from_config(config: &AuthConfig) -> Result<Self, String> {
-        let users = parse_users(&config.users)?;
-        if config.enabled && users.is_empty() {
-            return Err("auth.enabled is true, but auth.users is empty".to_string());
-        }
-        if config.enabled && config.session_expiry_seconds == 0 {
-            return Err("auth.session_expiry_seconds must be greater than zero".to_string());
+    pub fn from_config(config: &AuthConfig) -> Result<Option<Self>, String> {
+        if !config.enabled {
+            return Ok(None);
         }
 
-        Ok(Self(Arc::new(AuthStateInner {
-            enabled: config.enabled,
+        let users = parse_users(&config.users)?;
+        if users.is_empty() {
+            return Err("auth.enabled is true, but auth.users is empty".to_string());
+        }
+        if config.session_expiry_seconds == 0 {
+            return Err("auth.session_expiry_seconds must be greater than zero".to_string());
+        }
+        let session_expiry = Duration::from_secs(config.session_expiry_seconds);
+        let session_cookie_max_age = time::Duration::try_from(session_expiry)
+            .map_err(|_| "auth.session_expiry_seconds is too large".to_string())?;
+        if Instant::now().checked_add(session_expiry).is_none() {
+            return Err("auth.session_expiry_seconds is too large".to_string());
+        }
+
+        Ok(Some(Self(Arc::new(AuthStateInner {
             users,
             sessions: Mutex::new(HashMap::new()),
             secure_cookie: config.secure_cookie,
-            session_expiry: Duration::from_secs(config.session_expiry_seconds),
-        })))
-    }
-
-    pub fn is_enabled(&self) -> bool {
-        self.0.enabled
+            session_expiry,
+            session_cookie_max_age,
+        }))))
     }
 
     fn authenticated_user(&self, jar: &CookieJar) -> Option<String> {
@@ -73,7 +79,9 @@ impl AuthState {
             sessions.remove(token);
             return None;
         }
-        Some(session.username.clone())
+        let username = session.username.clone();
+        drop(sessions);
+        Some(username)
     }
 
     fn session_cookie(&self, token: String) -> Cookie<'static> {
@@ -82,9 +90,7 @@ impl AuthState {
             .http_only(true)
             .same_site(SameSite::Lax)
             .secure(self.0.secure_cookie)
-            .max_age(time::Duration::seconds(
-                self.0.session_expiry.as_secs() as i64
-            ))
+            .max_age(self.0.session_cookie_max_age)
             .build()
     }
 
@@ -96,10 +102,6 @@ impl AuthState {
             .secure(self.0.secure_cookie)
             .build()
     }
-}
-
-pub fn validate_config(config: &AuthConfig) -> Result<(), String> {
-    AuthState::from_config(config).map(|_| ())
 }
 
 fn parse_users(value: &str) -> Result<HashMap<String, String>, String> {
@@ -115,11 +117,7 @@ fn parse_users(value: &str) -> Result<HashMap<String, String>, String> {
         if username.trim().is_empty() || hash.trim().is_empty() {
             return Err("auth usernames and password hashes must not be empty".to_string());
         }
-        if !(hash.starts_with("$2a$") || hash.starts_with("$2b$") || hash.starts_with("$2y$")) {
-            return Err(format!(
-                "auth user {username:?} does not have a bcrypt password hash"
-            ));
-        }
+        validate_bcrypt_hash(username, hash)?;
         if users
             .insert(username.trim().to_string(), hash.trim().to_string())
             .is_some()
@@ -128,6 +126,39 @@ fn parse_users(value: &str) -> Result<HashMap<String, String>, String> {
         }
     }
     Ok(users)
+}
+
+fn validate_bcrypt_hash(username: &str, hash: &str) -> Result<(), String> {
+    if !(hash.starts_with("$2a$") || hash.starts_with("$2b$") || hash.starts_with("$2y$")) {
+        return Err(format!(
+            "auth user {username:?} does not have a bcrypt password hash"
+        ));
+    }
+
+    let parts = hash.parse::<bcrypt::HashParts>().map_err(|err| {
+        format!("auth user {username:?} has an invalid bcrypt password hash: {err}")
+    })?;
+    if !(4..=31).contains(&parts.get_cost()) {
+        return Err(format!("auth user {username:?} has an invalid bcrypt cost"));
+    }
+
+    let (_, payload) = hash
+        .rsplit_once('$')
+        .ok_or_else(|| format!("auth user {username:?} has an invalid bcrypt password hash"))?;
+    let (salt, digest) = payload.split_at(22);
+    let salt = bcrypt::BASE_64
+        .decode(salt)
+        .map_err(|_| format!("auth user {username:?} has an invalid bcrypt password hash"))?;
+    let digest = bcrypt::BASE_64
+        .decode(digest)
+        .map_err(|_| format!("auth user {username:?} has an invalid bcrypt password hash"))?;
+    if salt.len() != 16 || digest.len() != 23 {
+        return Err(format!(
+            "auth user {username:?} has an invalid bcrypt password hash"
+        ));
+    }
+
+    Ok(())
 }
 
 pub fn public_router(state: AuthState) -> Router {
@@ -298,6 +329,7 @@ mod tests {
             session_expiry_seconds: 60,
         })
         .unwrap()
+        .unwrap()
     }
 
     fn protected_app(state: AuthState) -> Router {
@@ -313,7 +345,11 @@ mod tests {
 
     #[test]
     fn parses_tinyauth_style_users() {
-        let users = parse_users("alice:$2b$12$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,bob:$2y$10$bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap();
+        let alice = bcrypt::hash("alice-password", 4).unwrap();
+        let users = parse_users(&format!(
+            "alice:{alice},bob:$2y$04$I.jf5EIXCDllPCFc0zv0kuXcgTswNFNYGjxr9Wo/TcP.TMpIZoq4O"
+        ))
+        .unwrap();
         assert_eq!(users.len(), 2);
         assert!(users.contains_key("alice"));
         assert!(users.contains_key("bob"));
@@ -322,6 +358,37 @@ mod tests {
     #[test]
     fn rejects_non_bcrypt_hashes() {
         assert!(parse_users("alice:plaintext").is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_bcrypt_hashes() {
+        assert!(parse_users("alice:$2b$12$not-a-complete-hash").is_err());
+        assert!(
+            parse_users("alice:$2b$12$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_session_expiry_that_cannot_be_represented() {
+        let config = AuthConfig {
+            enabled: true,
+            users: format!("alice:{}", bcrypt::hash("password", 4).unwrap()),
+            secure_cookie: false,
+            session_expiry_seconds: u64::MAX,
+        };
+        assert!(AuthState::from_config(&config).is_err());
+    }
+
+    #[test]
+    fn disabled_auth_ignores_auth_specific_values() {
+        let config = AuthConfig {
+            enabled: false,
+            users: "not-a-valid-user".to_string(),
+            secure_cookie: false,
+            session_expiry_seconds: u64::MAX,
+        };
+        assert!(AuthState::from_config(&config).unwrap().is_none());
     }
 
     #[tokio::test]

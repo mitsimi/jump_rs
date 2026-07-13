@@ -12,7 +12,7 @@ mod models;
 mod storage;
 mod web;
 
-use crate::app::build_service;
+use crate::app::build_app;
 use crate::cli::Cli;
 use crate::storage::SharedStorage;
 use clap::Parser;
@@ -37,10 +37,13 @@ async fn main() {
         }
     };
 
-    if let Err(err) = auth::validate_config(&config.auth) {
-        eprintln!("Invalid authentication configuration: {err}");
-        std::process::exit(1);
-    }
+    let auth_state = match auth::AuthState::from_config(&config.auth) {
+        Ok(state) => state,
+        Err(err) => {
+            eprintln!("Invalid authentication configuration: {err}");
+            std::process::exit(1);
+        }
+    };
 
     logging::init();
     info!(version = env!("CARGO_PKG_VERSION"), "Starting jump.rs");
@@ -59,7 +62,7 @@ async fn main() {
         }
     };
 
-    let app = build_service(storage);
+    let app = build_app(storage, auth_state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], config.server.port));
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
