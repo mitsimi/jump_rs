@@ -101,7 +101,7 @@ The Docker setup requires special networking configuration for Wake-on-LAN to fu
 
 - **Host Network Mode**: The container uses `network_mode: host` to access the local network directly. This is necessary because Wake-on-LAN magic packets must be sent to the broadcast address of your local network.
 
-- **Network Capabilities**: The container needs `NET_RAW` and `NET_ADMIN` capabilities to:
+- **Network Capabilities**: The container needs `NET_RAW` capability to:
   - Send raw network packets (Wake-on-LAN magic packets)
   - Perform network operations like ARP-based MAC address lookups
 
