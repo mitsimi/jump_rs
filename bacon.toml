@@ -28,6 +28,7 @@ analyzer = "nextest"
 
 [jobs.run]
 command = ["cargo", "run", "--locked"]
+watch = ["static", "config.toml"]
 need_stdout = true
 allow_warnings = true
 background = false
