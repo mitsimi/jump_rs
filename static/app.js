@@ -51,6 +51,8 @@ function jumpCancelModal(event) {
 
 function jumpCloseModalOnBackdrop(event) {
   const dialog = event.currentTarget;
+  if (event.target !== dialog) return;
+
   const bounds = dialog.getBoundingClientRect();
   const outside = event.clientX < bounds.left
     || event.clientX > bounds.right
@@ -74,8 +76,28 @@ function jumpShowTransferTab(tab) {
 
   exportTab?.classList.toggle("transfer__tab--active", !showImport);
   importTab?.classList.toggle("transfer__tab--active", showImport);
+  exportTab?.setAttribute("aria-selected", String(!showImport));
+  importTab?.setAttribute("aria-selected", String(showImport));
+  exportTab?.setAttribute("tabindex", showImport ? "-1" : "0");
+  importTab?.setAttribute("tabindex", showImport ? "0" : "-1");
   if (exportPanel) exportPanel.hidden = showImport;
   if (importPanel) importPanel.hidden = !showImport;
+}
+
+function jumpHandleTransferTabKeydown(event) {
+  const tabs = [...event.currentTarget.parentElement.querySelectorAll('[role="tab"]')];
+  const currentIndex = tabs.indexOf(event.currentTarget);
+  let nextIndex;
+
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % tabs.length;
+  else if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+  else if (event.key === "Home") nextIndex = 0;
+  else if (event.key === "End") nextIndex = tabs.length - 1;
+  else return;
+
+  event.preventDefault();
+  tabs[nextIndex].click();
+  tabs[nextIndex].focus();
 }
 
 function jumpImportDragOver(event) {

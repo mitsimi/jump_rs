@@ -21,13 +21,39 @@ pub fn transfer_modal(error: Option<&str>) -> Markup {
                     }
                 }
                 div class="transfer__modal-body" {
-                    div class="transfer__tabs" {
-                        button id="transfer-export-tab" type="button" class="transfer__tab transfer__tab--active" onclick="jumpShowTransferTab('export')" { "EXPORT" }
-                        button id="transfer-import-tab" type="button" class="transfer__tab" onclick="jumpShowTransferTab('import')" { "IMPORT" }
+                    div class="transfer__tabs" role="tablist" aria-label="Transfer mode" {
+                        button
+                            id="transfer-export-tab"
+                            type="button"
+                            role="tab"
+                            class="transfer__tab transfer__tab--active"
+                            aria-selected="true"
+                            aria-controls="transfer-export-panel"
+                            tabindex="0"
+                            onclick="jumpShowTransferTab('export')"
+                            onkeydown="jumpHandleTransferTabKeydown(event)" {
+                            "EXPORT"
+                        }
+                        button
+                            id="transfer-import-tab"
+                            type="button"
+                            role="tab"
+                            class="transfer__tab"
+                            aria-selected="false"
+                            aria-controls="transfer-import-panel"
+                            tabindex="-1"
+                            onclick="jumpShowTransferTab('import')"
+                            onkeydown="jumpHandleTransferTabKeydown(event)" {
+                            "IMPORT"
+                        }
                     }
 
                     div class="transfer__content" {
-                        div id="transfer-export-panel" class="transfer__export-section" {
+                        div
+                            id="transfer-export-panel"
+                            class="transfer__export-section"
+                            role="tabpanel"
+                            aria-labelledby="transfer-export-tab" {
                             div class="transfer__export-icon" { (icon(Icon::Download)) }
                             p class="transfer__description" {
                                 "Export all registered devices to a JSON file. The file contains device names, MAC addresses, IP addresses, ports, and descriptions."
@@ -41,6 +67,8 @@ pub fn transfer_modal(error: Option<&str>) -> Markup {
                         form
                             id="transfer-import-panel"
                             class="transfer__import-section"
+                            role="tabpanel"
+                            aria-labelledby="transfer-import-tab"
                             hidden
                             hx-post="/devices/import"
                             hx-target="#device-grid"
@@ -76,6 +104,9 @@ pub fn transfer_modal(error: Option<&str>) -> Markup {
                                 div class="transfer__divider" { span { "OR" } }
 
                                 div class="transfer__import-option" {
+                                    label class="form-label" for="import-payload" {
+                                        "JSON device data"
+                                    }
                                     textarea
                                         class="transfer__json-input"
                                         name="payload"
