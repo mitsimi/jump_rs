@@ -578,29 +578,28 @@ body::after {
     margin-top: auto;
 }
 
-.modal__overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
+.modal::backdrop {
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(4px);
     animation: fadeIn 0.2s ease;
 }
 
 .modal {
-    display: flex;
     flex-direction: column;
     width: min(100%, 520px);
     max-height: 85vh;
+    margin: auto;
     overflow: hidden;
+    padding: 0;
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
     background: var(--bg-primary);
+    color: var(--text-primary);
     animation: slideUp 0.3s ease;
+}
+
+.modal[open] {
+    display: flex;
 }
 
 .modal__medium {

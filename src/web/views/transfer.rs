@@ -6,13 +6,12 @@ use super::feedback::field_error;
 
 pub fn transfer_modal(error: Option<&str>) -> Markup {
     html! {
-        div
-            class="modal__overlay"
-            x-data="{}"
-            onclick="if (event.target === this) jumpCloseModal()" {
-            div class="modal modal__large" role="dialog" aria-modal="true" {
+        dialog
+            class="modal modal__large"
+            aria-labelledby="transfer-modal-title"
+            onclick="jumpCloseModalOnBackdrop(event)" {
                 div class="modal__header" {
-                    h2 class="modal__title" { "DATA TRANSFER" }
+                    h2 id="transfer-modal-title" class="modal__title" { "DATA TRANSFER" }
                     button
                         class="modal__close-btn"
                         type="button"
@@ -100,7 +99,6 @@ pub fn transfer_modal(error: Option<&str>) -> Markup {
                         }
                     }
                 }
-            }
         }
     }
 }

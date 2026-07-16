@@ -139,13 +139,12 @@ pub fn device_modal(device: Option<&Device>, error: Option<&str>) -> Markup {
         .unwrap_or("");
 
     html! {
-        div
-            class="modal__overlay"
-            x-data="{}"
-            onclick="if (event.target === this) jumpCloseModal()" {
-            div class="modal modal__medium" role="dialog" aria-modal="true" {
+        dialog
+            class="modal modal__medium"
+            aria-labelledby="device-modal-title"
+            onclick="jumpCloseModalOnBackdrop(event)" {
                 div class="modal__header" {
-                    h2 class="modal__title" { (title) }
+                    h2 id="device-modal-title" class="modal__title" { (title) }
                     button
                         class="modal__close-btn"
                         type="button"
@@ -164,7 +163,7 @@ pub fn device_modal(device: Option<&Device>, error: Option<&str>) -> Markup {
                         }
                         div class="form-group" {
                             label class="form-label" for="device-name" { "Device Name" }
-                            input id="device-name" class="form-input" name="name" placeholder="e.g., Gaming PC" value=(name) required;
+                            input id="device-name" class="form-input" name="name" placeholder="e.g., Gaming PC" value=(name) required autofocus;
                         }
                         div class="form-group" {
                             label class="form-label" for="mac-address" {
@@ -206,7 +205,6 @@ pub fn device_modal(device: Option<&Device>, error: Option<&str>) -> Markup {
                         }
                     }
                 }
-            }
         }
     }
 }

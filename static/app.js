@@ -5,6 +5,15 @@ document.body.addEventListener("htmx:beforeSwap", (event) => {
   }
 });
 
+let modalTrigger = null;
+
+document.addEventListener("click", (event) => {
+  const trigger = event.target instanceof Element
+    ? event.target.closest('[hx-target="#modal-root"]')
+    : null;
+  if (trigger) modalTrigger = trigger;
+});
+
 document.body.addEventListener("htmx:afterSwap", () => {
   document.querySelectorAll(".toast__toast").forEach((toast) => {
     if (toast.dataset.dismissScheduled) return;
@@ -16,13 +25,44 @@ document.body.addEventListener("htmx:afterSwap", () => {
   });
 });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") jumpCloseModal();
+document.body.addEventListener("htmx:afterSettle", () => {
+  const dialog = document.querySelector("#modal-root dialog");
+  if (dialog && !dialog.open) {
+    dialog.addEventListener("cancel", jumpCancelModal, { once: true });
+    dialog.showModal();
+  } else if (!dialog) jumpRestoreModalTrigger();
 });
 
+function jumpRestoreModalTrigger() {
+  if (modalTrigger?.isConnected) modalTrigger.focus();
+  modalTrigger = null;
+}
+
 function jumpCloseModal() {
+  const dialog = document.querySelector("#modal-root dialog");
+  if (dialog?.open) dialog.close();
+  jumpHandleModalClose();
+}
+
+function jumpCancelModal(event) {
+  event.preventDefault();
+  jumpCloseModal();
+}
+
+function jumpCloseModalOnBackdrop(event) {
+  const dialog = event.currentTarget;
+  const bounds = dialog.getBoundingClientRect();
+  const outside = event.clientX < bounds.left
+    || event.clientX > bounds.right
+    || event.clientY < bounds.top
+    || event.clientY > bounds.bottom;
+  if (outside) jumpCloseModal();
+}
+
+function jumpHandleModalClose() {
   const modalRoot = document.getElementById("modal-root");
-  if (modalRoot) modalRoot.innerHTML = "";
+  if (modalRoot) modalRoot.replaceChildren();
+  jumpRestoreModalTrigger();
 }
 
 function jumpShowTransferTab(tab) {
