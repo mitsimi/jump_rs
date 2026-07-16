@@ -1,0 +1,39 @@
+#:schema https://dystroy.org/bacon/.bacon.schema.json
+
+default_job = "check"
+env.CARGO_TERM_COLOR = "always"
+
+[jobs.check]
+command = ["cargo", "check", "--locked"]
+need_stdout = false
+
+[jobs.clippy]
+command = [
+    "cargo", "clippy", "--locked", "--all-targets", "--all-features", "--",
+    "-D", "warnings",
+]
+need_stdout = false
+
+[jobs.test]
+command = ["cargo", "test", "--locked"]
+need_stdout = true
+
+[jobs.nextest]
+command = [
+    "cargo", "nextest", "run", "--locked",
+    "--hide-progress-bar", "--failure-output", "final",
+]
+need_stdout = true
+analyzer = "nextest"
+
+[jobs.run]
+command = ["cargo", "run", "--locked"]
+need_stdout = true
+allow_warnings = true
+background = false
+on_change_strategy = "kill_then_restart"
+scroll_anchor = "auto"
+
+[keybindings]
+c = "job:clippy"
+r = "job:run"

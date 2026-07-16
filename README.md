@@ -111,6 +111,29 @@ These settings are already configured in the provided `docker-compose.yml` file.
 
 ## Development
 
+### Development tools
+
+This project uses [cargo-run-bin](https://github.com/dustinblackman/cargo-run-bin)
+to provide reproducible, project-scoped development tools. After installing Rust
+on a new machine, install cargo-run-bin once and then install this project's
+tools:
+
+```bash
+cargo install cargo-run-bin --locked
+cargo bin --install
+```
+
+The configured tools can then be run with Cargo aliases:
+
+```bash
+cargo nextest run
+cargo bacon
+cargo release --help
+```
+
+Tool versions are pinned in `Cargo.toml` and cached locally in `.bin/`. Running
+either alias also installs its tool automatically if it is not already cached.
+
 Build the project:
 
 ```bash

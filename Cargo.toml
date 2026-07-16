@@ -10,6 +10,12 @@ readme = "README.md"
 keywords = ["wake-on-lan", "wol", "server"]
 categories = ["command-line-utilities", "web-programming::http-server"]
 
+[package.metadata.bin]
+# Project-scoped developer tools managed by cargo-run-bin.
+cargo-nextest = { version = "0.9.140", locked = true }
+bacon = { version = "3.24.0", locked = true }
+cargo-release = { version = "1.1.3", locked = true }
+
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 axum = "0.8"
