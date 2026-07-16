@@ -29,6 +29,15 @@ const DUMMY_PASSWORD_HASH: &str = "$2b$12$UdLYoJ5lgPsC0RKqYH/jMua7zIn0g9kPqWmhYa
 #[derive(Clone)]
 pub struct AuthState(Arc<AuthStateInner>);
 
+#[derive(Clone, Debug)]
+pub struct AuthenticatedUser(String);
+
+impl AuthenticatedUser {
+    pub fn username(&self) -> &str {
+        &self.0
+    }
+}
+
 struct AuthStateInner {
     users: HashMap<String, String>,
     sessions: Mutex<HashMap<String, Session>>,
@@ -171,17 +180,22 @@ pub fn public_router(state: AuthState) -> Router {
 pub async fn require_authentication(
     State(state): State<AuthState>,
     jar: CookieJar,
-    request: Request<Body>,
+    mut request: Request<Body>,
     next: Next,
 ) -> Response {
     let is_api = request.uri().path().starts_with("/api/");
+    if let Some(username) = state.authenticated_user(&jar) {
+        request.extensions_mut().insert(AuthenticatedUser(username));
+        return next.run(request).await;
+    }
+
     let basic_credentials = is_api.then(|| parse_basic_credentials(&request)).flatten();
-    let basic_is_valid = if let Some((username, password)) = basic_credentials {
-        verify_credentials(&state, &username, password).await
-    } else {
-        false
-    };
-    if state.authenticated_user(&jar).is_some() || basic_is_valid {
+    if let Some((username, password)) = basic_credentials
+        && verify_credentials(&state, &username, password).await
+    {
+        request
+            .extensions_mut()
+            .insert(AuthenticatedUser(username.trim().to_string()));
         return next.run(request).await;
     }
 
@@ -314,7 +328,8 @@ fn login_view(error: Option<&str>) -> Markup {
 mod tests {
     use super::*;
     use axum::{
-        body::Body,
+        body::{Body, to_bytes},
+        extract::Extension,
         http::{Request, header},
         routing::get,
     };
@@ -334,7 +349,12 @@ mod tests {
 
     fn protected_app(state: AuthState) -> Router {
         let protected = Router::new()
-            .route("/private", get(|| async { "ok" }))
+            .route(
+                "/private",
+                get(|Extension(user): Extension<AuthenticatedUser>| async move {
+                    user.username().to_string()
+                }),
+            )
             .route("/api/private", get(|| async { "ok" }))
             .route_layer(axum::middleware::from_fn_with_state(
                 state.clone(),
@@ -455,6 +475,8 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(body.as_ref(), b"alice");
     }
 
     #[tokio::test]

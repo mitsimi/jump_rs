@@ -15,6 +15,7 @@ use axum::{
 };
 
 use crate::{
+    auth::AuthenticatedUser,
     devices::ArpError,
     error::ApiError,
     storage::SharedStorage,
@@ -40,9 +41,13 @@ pub fn router() -> Router {
         .route("/transfer", get(transfer_modal))
 }
 
-async fn home(Extension(storage): Extension<SharedStorage>) -> impl IntoResponse {
+async fn home(
+    Extension(storage): Extension<SharedStorage>,
+    authenticated_user: Option<Extension<AuthenticatedUser>>,
+) -> impl IntoResponse {
     let devices = crate::devices::list_devices(&storage);
-    views::home_page(&devices)
+    let username = authenticated_user.as_ref().map(|user| user.0.username());
+    views::home_page(&devices, username)
 }
 
 async fn devices_fragment(Extension(storage): Extension<SharedStorage>) -> impl IntoResponse {

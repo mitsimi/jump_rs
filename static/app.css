@@ -330,6 +330,13 @@ body::after {
     color: var(--accent-primary);
 }
 
+.app-header__username {
+    max-width: 18ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .app-header__status {
     gap: 12px;
     padding: 16px 24px;

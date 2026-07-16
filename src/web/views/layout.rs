@@ -32,11 +32,11 @@ pub fn layout(title: &str, body: Markup) -> Markup {
     }
 }
 
-pub fn home_page(devices: &[Device]) -> Markup {
+pub fn home_page(devices: &[Device], username: Option<&str>) -> Markup {
     layout(
         "Jumpers",
         html! {
-            (header())
+            (header(username))
             (device_grid(devices))
         },
     )
@@ -46,7 +46,7 @@ pub fn error_page(status: StatusCode, message: &str) -> Markup {
     layout(
         "Jumpers Error",
         html! {
-            (header())
+            (header(None))
             section class="empty-grid" {
                 div class="empty-banner" {
                     div class="empty-title" { "Request Failed" }
@@ -57,7 +57,7 @@ pub fn error_page(status: StatusCode, message: &str) -> Markup {
     )
 }
 
-fn header() -> Markup {
+fn header(username: Option<&str>) -> Markup {
     html! {
         header class="app-header" {
             div class="app-header__brand" {
@@ -76,9 +76,16 @@ fn header() -> Markup {
                     (icon(Icon::Database))
                     "Import / Export"
                 }
-                @if crate::config::get().auth.enabled {
+                @if let Some(username) = username {
                     form method="post" action="/logout" {
-                        button class="app-header__data-btn" type="submit" { "Sign out" }
+                        button
+                            class="app-header__data-btn app-header__logout-btn"
+                            type="submit"
+                            aria-label=(format!("Sign out {username}"))
+                            title="Sign out" {
+                            span class="app-header__username" { (username) }
+                            (icon(Icon::LogOut))
+                        }
                     }
                 }
             }
@@ -102,5 +109,19 @@ fn footer() -> Markup {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn authenticated_header_shows_username_and_logout_icon() {
+        let markup = header(Some("alice")).into_string();
+
+        assert!(markup.contains("alice"));
+        assert!(markup.contains("aria-label=\"Sign out alice\""));
+        assert!(markup.contains("m16 17 5-5-5-5"));
     }
 }
