@@ -39,7 +39,7 @@ fn empty_state() -> Markup {
         div class="device-grid__empty-grid" {
             div class="device-grid__empty-banner" {
                 div class="device-grid__empty-icon" { (icon(Icon::Plus)) }
-                div class="device-grid__empty-title" { "No Devices Found" }
+                h3 class="device-grid__empty-title" { "No Devices Found" }
                 div class="device-grid__empty-text" {
                     "Add your first device to start controlling your network wake capabilities."
                 }
@@ -53,7 +53,7 @@ fn device_card(device: &Device) -> Markup {
     html! {
         article class="device-card" id={ "device-" (device.id) } {
             div class="device-card__header" {
-                div class="device-card__name" { (device.name) }
+                h3 class="device-card__name" { (device.name) }
                 div class="device-card__id" { (short_id) }
             }
 

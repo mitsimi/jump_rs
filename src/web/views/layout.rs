@@ -54,7 +54,7 @@ pub fn error_page(status: StatusCode, message: &str) -> Markup {
             (header(None))
             section class="empty-grid" {
                 div class="empty-banner" {
-                    div class="empty-title" { "Request Failed" }
+                    h2 class="empty-title" { "Request Failed" }
                     div class="empty-text" { (status.as_u16()) " " (message) }
                 }
             }
