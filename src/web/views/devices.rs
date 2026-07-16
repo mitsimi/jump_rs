@@ -240,7 +240,7 @@ pub fn mac_lookup_error(mac: &str, error: &str) -> Markup {
 pub fn mac_lookup_error_with_hint(mac: &str, error: &str, hint: Option<&str>) -> Markup {
     html! {
         (mac_lookup_controls(mac))
-        span class="error-message error-message--inline" {
+        span class="error-message error-message--inline" role="alert" {
             span { (error) }
             @if let Some(hint) = hint {
                 span class="tooltip" {

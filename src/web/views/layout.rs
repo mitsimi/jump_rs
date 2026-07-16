@@ -26,7 +26,12 @@ pub fn layout(title: &str, body: Markup) -> Markup {
                     (footer())
                 }
                 div id="modal-root" {}
-                div id="toast-root" class="toast__container" {}
+                div
+                    id="toast-root"
+                    class="toast__container"
+                    aria-live="polite"
+                    aria-atomic="false"
+                    aria-relevant="additions" {}
             }
         }
     }

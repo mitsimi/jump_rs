@@ -29,7 +29,7 @@ impl ToastKind {
 
 pub fn field_error(message: &str) -> Markup {
     html! {
-        div class="error-message error-message--block" { (message) }
+        div class="error-message error-message--block" role="alert" { (message) }
     }
 }
 
