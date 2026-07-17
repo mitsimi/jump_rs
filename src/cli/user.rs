@@ -72,18 +72,23 @@ fn interactive_credentials() -> Result<(String, String, bool)> {
         .validate_with(|username: &String| validate_username(username))
         .interact_text()
         .context("failed to read username")?;
-    let password = Password::new()
-        .with_prompt("Set a password")
-        .interact()
-        .context("failed to read password")?;
-    let confirmation = Password::new()
-        .with_prompt("Confirm password")
-        .interact()
-        .context("failed to read confirmation password")?;
+    let password = loop {
+        let password = Password::new()
+            .with_prompt("Set a password")
+            .validate_with(|password: &String| validate_password(password))
+            .interact()
+            .context("failed to read password")?;
+        let confirmation = Password::new()
+            .with_prompt("Confirm password")
+            .interact()
+            .context("failed to read confirmation password")?;
 
-    if password != confirmation {
-        bail!("passwords do not match");
-    }
+        if password == confirmation {
+            break password;
+        }
+
+        eprintln!("Passwords do not match. Please try again.");
+    };
 
     let docker = Confirm::new()
         .with_prompt("Format for Docker Compose? (escapes dollar signs)")
