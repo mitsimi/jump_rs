@@ -1,12 +1,14 @@
+
 [package]
 name = "jump_rs"
 version = "2.1.0-beta.1"
 edition = "2024"
 description = "Wake-on-LAN web server"
-license = "MIT"
-repository = "https://github.com/mitsimi/jump_rs"
-homepage = "https://github.com/mitsimi/jump_rs"
+documentation = "https://github.com/mitsimi/jump_rs"
 readme = "README.md"
+homepage = "https://github.com/mitsimi/jump_rs"
+repository = "https://github.com/mitsimi/jump_rs"
+license = "MIT"
 keywords = ["wake-on-lan", "wol", "server"]
 categories = ["command-line-utilities", "web-programming::http-server"]
 
@@ -18,29 +20,28 @@ cargo-release = { version = "1.1.3", locked = true }
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "4", features = ["derive"] }
 axum = "0.8"
 axum-extra = {version = "0.10", features = ["cookie"]}
-tower-http = { version = "0.6", features = ["cors", "fs", "trace", "request-id", "util"] }
-tokio = { version = "1", default-features = false, features = ["macros", "net", "rt-multi-thread", "signal"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+base64 = "0.22"
+bcrypt = "0.18.0"
+clap = { version = "4", features = ["derive"] }
+config = { version = "0.15", default-features = false, features = ["toml"] }
+dialoguer = "0.12"
 maud = { version = "0.27", features = ["axum"] }
 nanoid = "0.4"
-thiserror = "1"
 parking_lot = "0.12.5"
-config = { version = "0.15", default-features = false, features = ["toml"] }
-wake-on-lan = "0.2"
-bcrypt = "0.18.0"
-rpassword = "7.5"
-base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
 time = { version = "0.3.47", features = ["serde", "serde-human-readable"] }
-
-# OpenAPI
+tokio = { version = "1", default-features = false, features = ["macros", "net", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "trace", "request-id", "util"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 utoipa = { version = "5.4.0", features = ["axum_extras", "time"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+wake-on-lan = "0.2"
+
 
 [dev-dependencies]
 tempfile = "3"

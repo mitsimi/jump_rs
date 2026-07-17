@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, bail};
 use clap::{Args, Subcommand};
-use std::io::{self, Write};
+use dialoguer::{Confirm, Input, Password};
 
 #[derive(Subcommand)]
 pub enum UserCommands {
@@ -34,7 +34,7 @@ pub struct CreateUserArgs {
     interactive: bool,
 
     /// Escape dollar signs for Docker Compose interpolation
-    #[arg(long)]
+    #[arg(long, conflicts_with = "interactive")]
     docker: bool,
 }
 
@@ -42,7 +42,7 @@ impl UserCommands {
     pub fn run(self) -> Result<()> {
         match self {
             Self::Create(args) => {
-                let (username, password) = if args.interactive {
+                let (username, password, docker) = if args.interactive {
                     interactive_credentials()?
                 } else {
                     (
@@ -50,49 +50,48 @@ impl UserCommands {
                             .context("--username is required unless --interactive is used")?,
                         args.password
                             .context("--password is required unless --interactive is used")?,
+                        args.docker,
                     )
                 };
 
                 validate_username(&username)?;
-                if password.is_empty() {
-                    bail!("password cannot be empty");
-                }
+                validate_password(&password)?;
 
-                let hash = bcrypt::hash(password, 12).context("failed to hash the password")?;
-                println!("{}", format_credential(&username, &hash, args.docker));
+                let hash = bcrypt::non_truncating_hash(password, bcrypt::DEFAULT_COST)
+                    .context("failed to hash the password")?;
+                println!("{}", format_credential(&username, &hash, docker));
                 Ok(())
             }
         }
     }
 }
 
-fn interactive_credentials() -> Result<(String, String)> {
-    let username = prompt("Username: ")?;
-    let password = prompt_password("Password: ")?;
-    let confirmation = prompt_password("Confirm password: ")?;
+fn interactive_credentials() -> Result<(String, String, bool)> {
+    let username: String = Input::<String>::new()
+        .with_prompt("Enter your username you want to use")
+        .validate_with(|username: &String| validate_username(username))
+        .interact_text()
+        .context("failed to read username")?;
+    let password = Password::new()
+        .with_prompt("Set a password")
+        .interact()
+        .context("failed to read password")?;
+    let confirmation = Password::new()
+        .with_prompt("Confirm password")
+        .interact()
+        .context("failed to read confirmation password")?;
 
     if password != confirmation {
         bail!("passwords do not match");
     }
 
-    Ok((username, password))
-}
+    let docker = Confirm::new()
+        .with_prompt("Format for Docker Compose? (escapes dollar signs)")
+        .default(false)
+        .interact()
+        .context("failed to read Docker Compose format preference")?;
 
-fn prompt(message: &str) -> Result<String> {
-    print!("{message}");
-    io::stdout().flush().context("failed to write prompt")?;
-
-    let mut value = String::new();
-    io::stdin()
-        .read_line(&mut value)
-        .context("failed to read input")?;
-    Ok(value.trim().to_owned())
-}
-
-fn prompt_password(message: &str) -> Result<String> {
-    print!("{message}");
-    io::stdout().flush().context("failed to write prompt")?;
-    rpassword::read_password().context("failed to read password")
+    Ok((username, password, docker))
 }
 
 fn validate_username(username: &str) -> Result<()> {
@@ -111,6 +110,16 @@ fn validate_username(username: &str) -> Result<()> {
     Ok(())
 }
 
+fn validate_password(password: &str) -> Result<()> {
+    if password.is_empty() {
+        bail!("password cannot be empty");
+    }
+    if password.len() > 72 {
+        bail!("password cannot exceed bcrypt's 72-byte limit");
+    }
+    Ok(())
+}
+
 fn format_credential(username: &str, hash: &str, docker: bool) -> String {
     let hash = if docker {
         hash.replace('$', "$$")
@@ -122,7 +131,7 @@ fn format_credential(username: &str, hash: &str, docker: bool) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{format_credential, validate_username};
+    use super::{format_credential, validate_password, validate_username};
 
     #[test]
     fn accepts_a_valid_username() {
@@ -137,6 +146,14 @@ mod tests {
                 "{username:?} should be rejected"
             );
         }
+    }
+
+    #[test]
+    fn rejects_empty_or_too_long_passwords() {
+        assert!(validate_password("").is_err());
+        assert!(validate_password(&"a".repeat(72)).is_ok());
+        assert!(validate_password(&"a".repeat(73)).is_err());
+        assert!(validate_password(&"é".repeat(37)).is_err());
     }
 
     #[test]

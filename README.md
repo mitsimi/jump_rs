@@ -67,7 +67,7 @@ JUMPERS_AUTH_SECURE_COOKIE=true
 Generate a compatible credential with Jumpers:
 
 ```bash
-jumpers user create --username admin --interactive
+jumpers user create --interactive
 ```
 
 The command prints a `username:password_hash` value suitable for `auth.users`.

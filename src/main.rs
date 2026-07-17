@@ -27,7 +27,7 @@ async fn main() {
     // Handle CLI commands that exit before running the server
     if let Some(command) = cli.command {
         if let Err(err) = command.execute() {
-            eprintln!("CLI command failed: {err:#}");
+            eprintln!("{err:#}");
             std::process::exit(1);
         }
         return;
