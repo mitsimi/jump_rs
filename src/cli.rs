@@ -1,43 +1,39 @@
-use crate::api;
-use clap::Parser;
+mod openapi;
+mod user;
+
+use crate::cli::{openapi::OpenApiCommands, user::UserCommands};
+use anyhow::Result;
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "jump.rs", version, about = "Wake-on-LAN web server")]
+#[command(name = "jumpers")]
+#[command(version, about)]
 pub struct Cli {
-    /// Print `OpenAPI` spec to stdout and exit
-    #[arg(long)]
-    emit_openapi: bool,
-
-    /// Generate `OpenAPI` spec to file and exit
-    #[arg(long)]
-    gen_openapi: bool,
+    #[command(subcommand)]
+    pub command: Option<Commands>,
 }
 
-impl Cli {
-    /// Handle CLI commands that should exit before running the server
-    /// Returns true if a command was handled and the program should exit
-    pub fn handle_commands(&self) -> bool {
-        if self.emit_openapi {
-            Self::emit_openapi_spec();
-            return true;
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Generate a bcrypt credential for an authentication user
+    User {
+        #[command(subcommand)]
+        command: UserCommands,
+    },
+
+    /// Emit or write the `OpenAPI` specification
+    #[command(name = "openapi")]
+    OpenApi {
+        #[command(subcommand)]
+        command: OpenApiCommands,
+    },
+}
+
+impl Commands {
+    pub fn execute(self) -> Result<()> {
+        match self {
+            Self::User { command } => command.run(),
+            Self::OpenApi { command } => command.run(),
         }
-
-        if self.gen_openapi {
-            Self::generate_openapi_file();
-            return true;
-        }
-
-        false
-    }
-
-    fn emit_openapi_spec() {
-        println!("{}", api::openapi().to_pretty_json().unwrap());
-    }
-
-    fn generate_openapi_file() {
-        let spec = api::openapi();
-        let json = serde_json::to_string_pretty(&spec).unwrap();
-        std::fs::write("openapi.json", json).unwrap();
-        println!("Generated OpenAPI spec to: openapi.json");
     }
 }

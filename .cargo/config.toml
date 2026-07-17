@@ -1,6 +1,6 @@
 [alias]
-emit-openapi = "run -- --emit-openapi"
-gen-openapi = "run -- --gen-openapi"
+emit-openapi = "run -- openapi emit"
+gen-openapi = "run -- openapi generate"
 bacon = ["bin", "bacon"]
 nextest = ["bin", "cargo-nextest"]
 release = ["bin", "cargo-release"]

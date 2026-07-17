@@ -64,7 +64,15 @@ JUMPERS_AUTH_USERS='admin:$2b$12$...'
 JUMPERS_AUTH_SECURE_COOKIE=true
 ```
 
-Use TinyAuth's `user create` command or another bcrypt password-hash generator.
+Generate a compatible credential with Jumpers:
+
+```bash
+jumpers user create --interactive
+```
+
+The command prints a `username:password_hash` value suitable for `auth.users`.
+Use `--docker` to escape dollar signs for Docker Compose. You can also provide
+`--password` for automation, but this exposes the password in shell history.
 When Docker Compose interpolates the value, escape each `$` in the hash as `$$`.
 Set `secure_cookie = true` whenever users access Jumpers over HTTPS.
 
@@ -150,6 +158,12 @@ or
 
 ```bash
 cargo gen-openapi
+```
+
+The CLI also accepts an explicit output path:
+
+```bash
+jumpers openapi generate path/to/openapi.json
 ```
 
 Swagger UI remains available at `/api/swagger` when the server is running.

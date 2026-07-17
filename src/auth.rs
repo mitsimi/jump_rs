@@ -238,9 +238,11 @@ async fn verify_credentials(state: &AuthState, username: &str, password: String)
         .map_or_else(|| DUMMY_PASSWORD_HASH.to_string(), Clone::clone);
     let username_exists = state.0.users.contains_key(username.trim());
 
-    tokio::task::spawn_blocking(move || bcrypt::verify(password, &hash).unwrap_or(false))
-        .await
-        .unwrap_or(false)
+    tokio::task::spawn_blocking(move || {
+        bcrypt::non_truncating_verify(password, &hash).unwrap_or(false)
+    })
+    .await
+    .unwrap_or(false)
         && username_exists
 }
 
