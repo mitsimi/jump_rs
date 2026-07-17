@@ -1,15 +1,26 @@
-FROM rust:1-alpine AS rust-builder
-
-RUN apk add --no-cache curl
+FROM lukemathwalker/cargo-chef:0.1.77-rust-1-alpine3.23@sha256:a4900bc89ce6a34cb1183f25e73858f6b53d004e2bfaaaae54d706468552ad7e AS chef
 
 WORKDIR /app
 
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && touch src/lib.rs src/main.rs && cargo fetch
+# ========================================
 
-COPY src/ ./src/
+FROM chef AS planner
 
-RUN cargo build --release
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+# ========================================
+
+FROM chef AS rust-builder
+
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY . .
+
+RUN cargo build --release --locked --bin jump_rs
+
+# ========================================
 
 FROM alpine:3.23 AS runtime
 

@@ -1,4 +1,3 @@
-
 [package]
 name = "jump_rs"
 version = "2.1.0-beta.2"
@@ -39,7 +38,7 @@ tower-http = { version = "0.6", features = ["cors", "fs", "trace", "request-id",
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 utoipa = { version = "5.4.0", features = ["axum_extras", "time"] }
-utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum", "vendored"] }
 wake-on-lan = "0.2"
 
 
