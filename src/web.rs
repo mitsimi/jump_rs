@@ -213,7 +213,6 @@ async fn export_devices(Extension(storage): Extension<SharedStorage>) -> Respons
 fn device_form_error(device: Option<&crate::models::Device>, message: &str) -> Response {
     (
         StatusCode::BAD_REQUEST,
-        [("HX-Retarget", "#modal-root"), ("HX-Reswap", "innerHTML")],
         views::device_modal(device, Some(message)),
     )
         .into_response()
@@ -222,7 +221,6 @@ fn device_form_error(device: Option<&crate::models::Device>, message: &str) -> R
 fn transfer_error(message: &str) -> Response {
     (
         StatusCode::BAD_REQUEST,
-        [("HX-Retarget", "#modal-root"), ("HX-Reswap", "innerHTML")],
         views::transfer_modal(Some(message)),
     )
         .into_response()
@@ -294,7 +292,18 @@ mod tests {
         let body = response_text(response).await;
         assert!(body.contains("Gaming PC"));
         assert!(body.contains("Device created"));
-        assert!(body.contains("hx-swap-oob"));
+        let grid_partial = body
+            .find("<hx-partial hx-target=\"#device-grid\" hx-swap=\"outerMorph\">")
+            .unwrap();
+        let toast_partial = body
+            .find("<hx-partial hx-target=\"#toast-root\" hx-swap=\"beforeend\">")
+            .unwrap();
+        let modal_partial = body
+            .find("<hx-partial hx-target=\"#modal-root\"></hx-partial>")
+            .unwrap();
+        assert!(grid_partial < toast_partial);
+        assert!(toast_partial < modal_partial);
+        assert!(!body.contains("hx-swap-oob"));
     }
 
     #[tokio::test]
@@ -309,14 +318,12 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        assert_eq!(
-            response.headers().get("HX-Retarget").unwrap(),
-            "#modal-root"
-        );
-        assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
+        assert!(response.headers().get("HX-Retarget").is_none());
+        assert!(response.headers().get("HX-Reswap").is_none());
         assert!(storage.get_all().is_empty());
         let body = response_text(response).await;
         assert!(body.contains("Invalid MAC address format"));
+        assert!(body.contains("hx-status:4xx=\"target:#modal-root swap:innerHTML\""));
     }
 
     #[tokio::test]
@@ -342,15 +349,27 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        assert_eq!(
-            response.headers().get("HX-Retarget").unwrap(),
-            "#modal-root"
-        );
-        assert_eq!(response.headers().get("HX-Reswap").unwrap(), "innerHTML");
+        assert!(response.headers().get("HX-Retarget").is_none());
+        assert!(response.headers().get("HX-Reswap").is_none());
         assert_eq!(storage.get(&id).unwrap().mac_address, "AA:BB:CC:DD:EE:FF");
         let body = response_text(response).await;
         assert!(body.contains("Invalid MAC address format"));
         assert!(body.contains("Edit Device"));
+        assert!(body.contains("hx-status:4xx=\"target:#modal-root swap:innerHTML\""));
+    }
+
+    #[tokio::test]
+    async fn wake_error_is_routed_to_toast_partial() {
+        let (app, _storage, _dir) = app();
+        let response = app
+            .oneshot(form_request("/devices/missing/wake", ""))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response_text(response).await;
+        assert!(body.contains("<hx-partial hx-target=\"#toast-root\" hx-swap=\"beforeend\">"));
+        assert!(body.contains("Device not found"));
     }
 
     #[tokio::test]

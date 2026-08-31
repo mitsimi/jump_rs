@@ -43,8 +43,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--htmx",
-        default="latest",
-        help="htmx.org version or dist-tag to vendor. Defaults to latest.",
+        default="next",
+        help="htmx.org version or dist-tag to vendor. Defaults to next (the v4 release line).",
     )
     parser.add_argument(
         "--alpine",

@@ -43,28 +43,30 @@ fn toast(kind: ToastKind, message: &str) -> Markup {
     }
 }
 
-fn toast_oob(kind: ToastKind, message: &str) -> Markup {
+fn toast_partial(kind: ToastKind, message: &str) -> Markup {
     html! {
-        div id="toast-root" hx-swap-oob="beforeend" {
+        hx-partial hx-target="#toast-root" hx-swap="beforeend" {
             (toast(kind, message))
         }
     }
 }
 
-pub fn clear_modal_oob() -> Markup {
+fn clear_modal_partial() -> Markup {
     html! {
-        div id="modal-root" hx-swap-oob="innerHTML" {}
+        hx-partial hx-target="#modal-root" {}
     }
 }
 
 pub fn grid_with_toast(devices: &[Device], kind: ToastKind, message: &str) -> Markup {
     html! {
-        (device_grid(devices))
-        (toast_oob(kind, message))
-        (clear_modal_oob())
+        hx-partial hx-target="#device-grid" hx-swap="outerMorph" {
+            (device_grid(devices))
+        }
+        (toast_partial(kind, message))
+        (clear_modal_partial())
     }
 }
 
 pub fn toast_fragment(kind: ToastKind, message: &str) -> Markup {
-    toast(kind, message)
+    toast_partial(kind, message)
 }

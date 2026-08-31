@@ -84,9 +84,7 @@ fn device_card(device: &Device) -> Markup {
                 button
                     class="btn btn-primary"
                     type="button"
-                    hx-post={ "/devices/" (device.id) "/wake" }
-                    hx-target="#toast-root"
-                    hx-swap="beforeend" {
+                    hx-post={ "/devices/" (device.id) "/wake" } {
                     (icon(Icon::Power))
                     "Wake"
                 }
@@ -105,8 +103,6 @@ fn device_card(device: &Device) -> Markup {
                     class="btn btn-danger device-card__icon-action"
                     type="button"
                     hx-post={ "/devices/" (device.id) "/delete" }
-                    hx-target="#device-grid"
-                    hx-swap="outerHTML"
                     hx-confirm={ "Remove " (device.name) "?" }
                     aria-label="Remove device"
                     title="Remove device" {
@@ -156,7 +152,8 @@ pub fn device_modal(device: Option<&Device>, error: Option<&str>) -> Markup {
                 form
                     hx-post=(action)
                     hx-target="#device-grid"
-                    hx-swap="outerHTML" {
+                    hx-swap="outerHTML"
+                    hx-status:4xx="target:#modal-root swap:innerHTML" {
                     div class="modal__body" {
                         @if let Some(error) = error {
                             (field_error(error))

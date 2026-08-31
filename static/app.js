@@ -1,10 +1,3 @@
-document.body.addEventListener("htmx:beforeSwap", (event) => {
-  if (event.detail.xhr.status >= 400 && event.detail.xhr.status < 500) {
-    event.detail.shouldSwap = true;
-    event.detail.isError = false;
-  }
-});
-
 let modalTrigger = null;
 
 document.addEventListener("click", (event) => {
@@ -14,7 +7,7 @@ document.addEventListener("click", (event) => {
   if (trigger) modalTrigger = trigger;
 });
 
-document.body.addEventListener("htmx:afterSwap", () => {
+document.body.addEventListener("htmx:after:settle", () => {
   document.querySelectorAll(".toast__toast").forEach((toast) => {
     if (toast.dataset.dismissScheduled) return;
     toast.dataset.dismissScheduled = "true";
@@ -23,9 +16,6 @@ document.body.addEventListener("htmx:afterSwap", () => {
       setTimeout(() => toast.remove(), 450);
     }, 3800);
   });
-});
-
-document.body.addEventListener("htmx:afterSettle", () => {
   const dialog = document.querySelector("#modal-root dialog");
   if (dialog && !dialog.open) {
     dialog.addEventListener("cancel", jumpCancelModal, { once: true });

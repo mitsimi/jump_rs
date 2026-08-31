@@ -101,7 +101,8 @@ fn import_panel(error: Option<&str>) -> Markup {
             hidden
             hx-post="/devices/import"
             hx-target="#device-grid"
-            hx-swap="outerHTML" {
+            hx-swap="outerHTML"
+            hx-status:4xx="target:#modal-root swap:innerHTML" {
             @if let Some(error) = error {
                 (field_error(error))
             }

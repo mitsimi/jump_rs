@@ -176,10 +176,11 @@ scripts/update-vendor-js.py
 
 The updater downloads the browser bundles from the published npm tarballs and
 updates `static/vendor/manifest.json` with version, source, and checksum data.
+By default it follows HTMX's `next` v4 release line and Alpine's `latest` tag.
 Specific versions can be pinned when needed:
 
 ```bash
-scripts/update-vendor-js.py --htmx 2.0.10 --alpine 3.15.12
+scripts/update-vendor-js.py --htmx 4.0.0 --alpine 3.15.12
 ```
 
 Use check mode to fail when vendored assets are behind the requested versions:
