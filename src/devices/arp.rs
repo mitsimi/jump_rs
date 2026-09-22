@@ -1,12 +1,16 @@
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddr, ToSocketAddrs};
 use std::process::{Command, Output};
 use thiserror::Error;
 use tracing::{debug, instrument, warn};
 
 #[derive(Debug, Error)]
 pub enum ArpError {
-    #[error("Invalid IP address format: {0}")]
-    InvalidIp(#[from] std::net::AddrParseError),
+    #[error("Could not resolve {host} to an IPv4 address: {source}")]
+    Resolve {
+        host: String,
+        #[source]
+        source: std::io::Error,
+    },
 
     #[error("Failed to query ARP table: {0}")]
     Query(#[source] std::io::Error),
@@ -24,15 +28,16 @@ impl ArpError {
             Self::NotDirectlyConnected { .. } => Some(
                 "ARP-based MAC lookup only works when jump_rs can access the target device on the same layer-2 network. Docker Desktop, OrbStack, and other VM-backed Docker runtimes may hide LAN devices even with host networking. Running jump_rs directly on the host or in a Linux host-network container usually fixes this.",
             ),
-            Self::InvalidIp(_) | Self::Query(_) | Self::NotFound(_) => None,
+            Self::Resolve { .. } | Self::Query(_) | Self::NotFound(_) => None,
         }
     }
 }
 
-/// Looks up the MAC address for a given IP by pinging it and checking the ARP table.
+/// Resolves a hostname or IPv4 address, then probes it and checks the ARP table.
 #[instrument(skip_all)]
-pub fn lookup_mac(ip: &str) -> Result<String, ArpError> {
-    let ip_addr: Ipv4Addr = ip.parse()?;
+pub fn lookup_mac(host: &str) -> Result<String, ArpError> {
+    let ip_addr = resolve_ipv4(host)?;
+    let ip = &ip_addr.to_string();
 
     ensure_direct_route(ip)?;
 
@@ -43,6 +48,32 @@ pub fn lookup_mac(ip: &str) -> Result<String, ArpError> {
     debug!("Pinging IP to populate ARP cache");
     ping_ip(ip_addr).ok();
     get_mac_from_arp(ip)
+}
+
+// Use the runtime's system resolver, including its hosts file and DNS configuration.
+fn resolve_ipv4(host: &str) -> Result<Ipv4Addr, ArpError> {
+    let host = host.trim();
+    if let Ok(ip) = host.parse::<Ipv4Addr>() {
+        return Ok(ip);
+    }
+    let resolve_error = |source| ArpError::Resolve {
+        host: host.to_string(),
+        source,
+    };
+    let addresses = (host, 0).to_socket_addrs().map_err(resolve_error)?;
+    first_ipv4(addresses).ok_or_else(|| {
+        resolve_error(std::io::Error::new(
+            std::io::ErrorKind::AddrNotAvailable,
+            "no IPv4 address found (ARP requires IPv4)",
+        ))
+    })
+}
+
+fn first_ipv4(addresses: impl IntoIterator<Item = SocketAddr>) -> Option<Ipv4Addr> {
+    addresses.into_iter().find_map(|address| match address {
+        SocketAddr::V4(address) => Some(*address.ip()),
+        SocketAddr::V6(_) => None,
+    })
 }
 
 fn ensure_direct_route(ip: &str) -> Result<(), ArpError> {
@@ -275,6 +306,42 @@ fn normalize_mac(mac: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolves_ipv4_literal_with_whitespace() {
+        assert_eq!(
+            resolve_ipv4(" 192.168.1.100 ").unwrap(),
+            Ipv4Addr::new(192, 168, 1, 100)
+        );
+    }
+
+    #[test]
+    fn resolves_hostname_using_system_resolver() {
+        assert!(resolve_ipv4("localhost").unwrap().is_loopback());
+    }
+
+    #[test]
+    fn rejects_ipv6_only_target() {
+        assert!(matches!(resolve_ipv4("::1"), Err(ArpError::Resolve { .. })));
+    }
+
+    #[test]
+    fn rejects_invalid_hostname() {
+        assert!(matches!(
+            resolve_ipv4("invalid host\0"),
+            Err(ArpError::Resolve { .. })
+        ));
+    }
+
+    #[test]
+    fn selects_first_ipv4_from_mixed_results() {
+        let addresses = [
+            "[::1]:0".parse().unwrap(),
+            "192.168.1.2:0".parse().unwrap(),
+            "192.168.1.3:0".parse().unwrap(),
+        ];
+        assert_eq!(first_ipv4(addresses), Some(Ipv4Addr::new(192, 168, 1, 2)));
+    }
 
     #[test]
     fn parse_darwin_padded_mac() {

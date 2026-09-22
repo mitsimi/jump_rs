@@ -28,7 +28,7 @@ pub fn router() -> Router {
 
 #[derive(Debug, serde::Deserialize, ToSchema)]
 pub struct ArpLookupRequest {
-    /// IPv4 address to look up in the ARP table
+    /// IPv4 address or hostname to resolve and look up in the ARP table
     #[schema(example = "192.168.1.100")]
     pub ip: String,
 }
@@ -45,12 +45,12 @@ pub struct ArpLookupResponse {
     path = "/api/arp-lookup",
     operation_id = "arpLookup",
     tag = "network",
-    summary = "Look up MAC address by IP",
-    description = "Queries the system's ARP table to find the MAC address for a given IPv4 address. The IP must have recently communicated with this host to appear in the ARP table.",
-    request_body(content = ArpLookupRequest, description = "IP address to look up"),
+    summary = "Look up MAC address by IP or hostname",
+    description = "Resolves an IPv4 address or hostname using the server's system resolver, then probes the first IPv4 address and queries the ARP table. The target must be on the same layer-2 network as the server.",
+    request_body(content = ArpLookupRequest, description = "IPv4 address or hostname to look up (in the ip field)"),
     responses(
         (status = 200, description = "MAC address found", body = ArpLookupResponse),
-        (status = 400, description = "Invalid IP address format", body = ErrorResponse),
+        (status = 400, description = "Hostname resolution failed or no IPv4 address available", body = ErrorResponse),
         (status = 404, description = "IP not found in ARP table", body = ErrorResponse),
         (status = 500, description = "Error querying ARP table", body = ErrorResponse)
     )

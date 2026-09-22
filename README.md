@@ -5,6 +5,7 @@ A simple Wake-on-LAN (WoL) web server built with Rust and Axum.
 ## Features
 
 - Wake devices on your network via HTTP API
+- Lookup MAC address via ip address or hostname
 - Rust-rendered web interface powered by HTMX
 - JSON-based device storage
 - Configurable via file or environment variables

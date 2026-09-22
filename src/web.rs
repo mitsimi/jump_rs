@@ -139,7 +139,8 @@ async fn arp_lookup(Form(form): Form<ArpLookupForm>) -> Response {
     let ip = form.ip_address.trim();
     let current_mac = form.mac_address.unwrap_or_default();
     if ip.is_empty() {
-        return views::mac_lookup_error(&current_mac, "Enter an IP address first").into_response();
+        return views::mac_lookup_error(&current_mac, "Enter an IP address or hostname first")
+            .into_response();
     }
 
     match crate::devices::arp_lookup(ip) {

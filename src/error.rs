@@ -50,7 +50,7 @@ impl ApiError {
             },
 
             Self::Arp(e) => match e {
-                ArpError::InvalidIp(_) => StatusCode::BAD_REQUEST,
+                ArpError::Resolve { .. } => StatusCode::BAD_REQUEST,
                 ArpError::NotDirectlyConnected { .. } | ArpError::NotFound(_) => {
                     StatusCode::NOT_FOUND
                 }
@@ -116,11 +116,12 @@ impl ApiError {
                 }
             },
             Self::Arp(e) => match e {
-                ArpError::InvalidIp(err) => {
+                ArpError::Resolve { host, source } => {
                     warn!(
-                        error_type = "arp_invalid_ip",
+                        error_type = "arp_resolve",
+                        host = %host,
                         status_code = status_code,
-                        details = %err,
+                        details = %source,
                         "Request failed"
                     );
                 }

@@ -174,9 +174,9 @@ pub fn device_modal(device: Option<&Device>, error: Option<&str>) -> Markup {
                         div class="form-row" {
                             div class="form-group form-group--flush" {
                                 label class="form-label" for="ip-address" {
-                                    "IP Address " span class="form-hint" { "(optional)" }
+                                    "IP Address or Hostname " span class="form-hint" { "(optional)" }
                                 }
-                                input id="ip-address" class="form-input" name="ip_address" placeholder="192.168.1.100" value=(ip);
+                                input id="ip-address" class="form-input" name="ip_address" placeholder="192.168.1.100 or computer.local" value=(ip);
                             }
                             div class="form-group form-group--flush" {
                                 label class="form-label" for="device-port" { "Port" }
